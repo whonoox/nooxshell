@@ -307,6 +307,7 @@ Scope {
             property int workspaceId: -1
             property var handles: []
             property string handleSig: ""
+            property string tileSig: ""
 
             property bool dragging: false
             property string dragKey: ""
@@ -348,12 +349,21 @@ Scope {
                 workspaceId = wsId
 
                 var parts = []
+                var floats = []
                 var tops = Hyprland.toplevels.values
                 for (var i = 0; i < tops.length; i++) {
                     var o = tops[i].lastIpcObject
-                    if (!o || !o.address || !o.workspace || o.workspace.id !== wsId)
+                    if (!o || !o.address || !o.workspace || o.hidden || o.mapped === false)
                         continue
-                    if (o.floating || o.hidden || o.mapped === false)
+                    // Floating windows sit above the dots' seams, so the
+                    // dots keep clear of them.
+                    if (o.floating) {
+                        if (o.workspace.id === wsId || o.pinned)
+                            floats.push((o.at[0] - ox) + "," + (o.at[1] - oy)
+                                + "," + o.size[0] + "," + o.size[1])
+                        continue
+                    }
+                    if (o.workspace.id !== wsId)
                         continue
                     if (o.fullscreen)
                         return ""
@@ -363,7 +373,8 @@ Scope {
                         + "," + o.size[0] + "," + o.size[1])
                 }
                 parts.sort()
-                return parts.length >= 3 ? parts.join(";") : ""
+                floats.sort()
+                return parts.length >= 3 ? parts.join(";") + "#" + floats.join(";") : ""
             }
 
             onSnapshotChanged: recompute()
@@ -371,17 +382,24 @@ Scope {
 
             function recompute() {
                 var wins = []
+                var covers = []
                 if (snapshot) {
-                    var parts = snapshot.split(";")
+                    var halves = snapshot.split("#")
+                    var parts = halves[0].split(";")
                     for (var i = 0; i < parts.length; i++) {
                         var p = parts[i].split(":")
                         var n = p[1].split(",").map(Number)
                         wins.push({ addr: p[0], x: n[0], y: n[1], w: n[2], h: n[3] })
                     }
+                    var fl = halves[1] ? halves[1].split(";") : []
+                    for (var f = 0; f < fl.length; f++) {
+                        var c = fl[f].split(",").map(Number)
+                        covers.push({ x: c[0], y: c[1], w: c[2], h: c[3] })
+                    }
                 }
                 tree = TileTree.build(wins, root.builtTrees[workspaceId])
 
-                var hs = TileTree.handles(tree, root.hitSize)
+                var hs = TileTree.handles(tree, root.hitSize, covers)
                 var out = []
                 var sig = []
                 for (var j = 0; j < hs.length; j++) {
@@ -391,11 +409,17 @@ Scope {
                         + "/" + r.x + "," + r.y + "," + r.w + "," + r.h)
                 }
                 sig = sig.join("|")
+                // A floating window moving only shifts the dots; the filled
+                // gaps wait only for the tiled windows.
+                var tiles = snapshot.split("#")[0]
+                if (tiles !== tileSig) {
+                    tileSig = tiles
+                    fuseReady = false
+                    fuseTimer.restart()
+                }
                 if (sig !== handleSig) {
                     handleSig = sig
                     handles = out
-                    fuseReady = false
-                    fuseTimer.restart()
                     // The dots are made anew, and a dot destroyed under the
                     // pointer never reports the pointer leaving it.
                     root.hoverKey = ""
@@ -438,12 +462,13 @@ Scope {
                 return target
             }
 
-            // Window sizes change without any event (a resize by mouse or
-            // keys), so the dots are checked again while there are any.
+            // Window sizes and floating window moves come without any
+            // event, so the dots are checked again while there could be any,
+            // also when floating windows hide all of them.
             Timer {
                 interval: 1000
                 repeat: true
-                running: panel.visible && !panel.dragging
+                running: panel.snapshot !== "" && !panel.dragging
                 onTriggered: Hyprland.refreshToplevels()
             }
 

@@ -202,12 +202,24 @@ function splits(n, out) {
 
 // Where a group's dot goes: the middle of its own split line, between the
 // two sides it joins. Two lines never share a middle in a dwindle tree, but
-// a dot is stepped along its line if another sits within `gap` of it. The
-// whole workspace is not a group.
-function handles(root, gap) {
+// a dot is stepped along its line if another sits within `gap` of it, or if
+// a floating window in `covers` ({x,y,w,h}) is over it. A group whose line
+// is covered all along gets no dot. The whole workspace is not a group.
+function handles(root, gap, covers) {
     var out = []
     if (!root || isLeaf(root))
         return out
+    covers = covers || []
+
+    function covered(px, py) {
+        for (var c = 0; c < covers.length; c++) {
+            var r = covers[c]
+            if (px + gap / 2 > r.x && px - gap / 2 < r.x + r.w
+                    && py + gap / 2 > r.y && py - gap / 2 < r.y + r.h)
+                return true
+        }
+        return false
+    }
 
     var all = splits(root)
     for (var i = 0; i < all.length; i++) {
@@ -218,14 +230,16 @@ function handles(root, gap) {
         var vertical = n.axis === "v"
         var start = vertical ? n.box.y : n.box.x
         var length = vertical ? n.box.h : n.box.w
+        var mid = start + length / 2
+        var steps = Math.max(0, Math.floor((length / 2 - gap / 2) / gap))
         var spot = null
-        for (var k = 0; k <= 8 && spot === null; k++) {
+        for (var k = 0; k <= steps && spot === null; k++) {
             for (var sign = 1; sign >= -1 && spot === null; sign -= 2) {
-                var along = start + length / 2 + sign * k * gap
+                var along = mid + sign * k * gap
                 var px = vertical ? n.pos : along
                 var py = vertical ? along : n.pos
-                var free = true
-                for (var o = 0; o < out.length; o++) {
+                var free = !covered(px, py)
+                for (var o = 0; o < out.length && free; o++) {
                     if (Math.abs(out[o].x - px) < gap && Math.abs(out[o].y - py) < gap)
                         free = false
                 }
@@ -235,8 +249,13 @@ function handles(root, gap) {
                     break
             }
         }
-        if (!spot)
-            spot = vertical ? { x: n.pos, y: start + length / 2 } : { x: start + length / 2, y: n.pos }
+        if (!spot) {
+            var mx = vertical ? n.pos : mid
+            var my = vertical ? mid : n.pos
+            if (covered(mx, my))
+                continue
+            spot = { x: mx, y: my }
+        }
         out.push({ node: n, key: keyOf(n), x: spot.x, y: spot.y })
     }
     return out
