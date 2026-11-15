@@ -1,0 +1,47 @@
+Key sounds for nooxshell: a smooth linear switch, in the style of the
+Gateron Milky Yellow set. These are recordings of Alpaca linear switches
+from kbsim (https://github.com/tplai/kbsim, src/assets/audio/alpaca),
+converted to 48 kHz mono WAV with the leading silence trimmed and 10 dB
+of gain:
+
+  ffmpeg -i press/GENERIC_R0.mp3 -af "silenceremove=start_periods=1:\
+    start_threshold=-60dB,afade=t=in:d=0.001,areverse,afade=t=in:d=0.004,\
+    areverse,volume=10dB" -ac 1 -ar 48000 -c:a pcm_s16le down-generic-r0.wav
+
+press/X.mp3 became down-x.wav and release/X.mp3 became up-x.wav.
+
+The exception is down-enter-gunshot.wav, the pistol shot Enter plays. It
+is "pistol shot" (audio file ID 233473) by mrfriends
+(https://pixabay.com/users/mrfriends-45509135/) from Pixabay,
+https://pixabay.com/sound-effects/film-special-effects-pistol-shot-233473/
+downloaded 2026-11-15 under the Pixabay Content License
+(https://pixabay.com/service/terms/), not the MIT license below. It was
+trimmed of its leading silence, cut to 1.32 s with a 60 ms fade out, and
+lowered to peak at -13 dB:
+
+  ffmpeg -i pistol-shot-233473.mp3 -af "silenceremove=start_periods=1:\
+    start_threshold=-50dB,afade=t=in:d=0.001,atrim=end=1.32,areverse,\
+    afade=t=in:d=0.06,areverse,volume=-16.5dB" -ac 1 -ar 48000 \
+    -c:a pcm_s16le down-enter-gunshot.wav
+
+MIT License
+
+Copyright (c) Thomas Lai
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

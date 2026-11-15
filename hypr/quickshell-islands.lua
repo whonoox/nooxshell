@@ -41,6 +41,7 @@ M.bindings = {
   { key = "SUPER + ALT + C", desc = "Cursor X-Ray toggle", dispatch = "quickshell:cursorXRayToggle" },
   { key = "SUPER + ALT + I", desc = "Stay awake toggle", dispatch = "quickshell:stayAwakeToggle" },
   { key = "SUPER + ALT + L", desc = "Night light toggle", dispatch = "quickshell:nightLightToggle" },
+  { key = "SUPER + ALT + T", desc = "Key sounds toggle", dispatch = "quickshell:keySoundsToggle" },
   { key = "XF86RFKill", desc = "Airplane mode toggle", dispatch = "quickshell:airplaneToggle" },
 }
 
@@ -390,6 +391,85 @@ function M.tile_bindings()
       QsTiles.key_move(direction.dir)
     end)
   end
+end
+
+-- Key sounds. While the shell has them on, every key press and release is
+-- sent to it as the name of the sound to play, never as the key: one of the
+-- five rows (keySoundR0 for the number row to keySoundR4 for the bottom),
+-- Space, Enter or Backspace, and keySoundUp* for a release. The shell turns
+-- the listener on and off with QsKeys.set, and again after a reload, which
+-- starts with it off. With the sounds off there is no listener at all.
+QsKeys = QsKeys or {}
+M.keys = QsKeys
+
+if QsKeys.watch then
+  pcall(function()
+    QsKeys.watch:remove()
+  end)
+  QsKeys.watch = nil
+end
+
+-- XKB keycodes (evdev + 8), as the key event reports them. Anything not
+-- listed, such as the modifiers and the arrows, sounds as the bottom row.
+local KEY_SOUNDS = { [65] = "Space", [36] = "Enter", [104] = "Enter", [22] = "Backspace" }
+do
+  local function span(sound, first, last)
+    for code = first, last do
+      KEY_SOUNDS[code] = sound
+    end
+  end
+  local function each(sound, codes)
+    for _, code in ipairs(codes) do
+      KEY_SOUNDS[code] = sound
+    end
+  end
+  span("R0", 10, 21) -- 1 to =
+  span("R0", 67, 76) -- F1 to F10
+  each("R0", { 9, 49, 95, 96, 119 }) -- Esc, `, F11, F12, Delete
+  span("R1", 23, 35) -- Tab, Q to ]
+  each("R1", { 51 }) -- \
+  span("R2", 38, 48) -- A to '
+  each("R2", { 66 }) -- Caps Lock
+  span("R3", 52, 61) -- Z to /
+  each("R3", { 50, 62 }) -- the Shifts
+end
+
+local KEY_RELEASES = { Space = "UpSpace", Enter = "UpEnter", Backspace = "UpBackspace" }
+
+function QsKeys.set(on)
+  if QsKeys.watch then
+    pcall(function()
+      QsKeys.watch:remove()
+    end)
+    QsKeys.watch = nil
+  end
+  -- A real switch is silent while held. A held key arrives as a release
+  -- and a press over and over, each pair carrying the time of the first
+  -- press, so an event with the time of its key's press is a repeat. Each
+  -- event can also arrive twice, so a press already sounded at that time,
+  -- or a release of a key not down, is skipped too. pressed[keycode] is
+  -- the time of the key's press while it is down.
+  QsKeys.pressed = {}
+  if not on then
+    return
+  end
+  QsKeys.watch = hl.on("input.keyboard.key", function(keycode, time, state)
+    local pressed = QsKeys.pressed
+    local sound = KEY_SOUNDS[keycode] or "R4"
+    if state == 0 then
+      if pressed[keycode] == nil or pressed[keycode] == time then
+        return
+      end
+      pressed[keycode] = nil
+      sound = KEY_RELEASES[sound] or "Up"
+    else
+      if pressed[keycode] ~= nil then
+        return
+      end
+      pressed[keycode] = time
+    end
+    hl.dispatch(hl.dsp.global("quickshell:keySound" .. sound))
+  end)
 end
 
 M.decorations()

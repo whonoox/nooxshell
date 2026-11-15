@@ -89,6 +89,7 @@ line, restores `shell.json`, and brings the stock Omarchy shell back up.
 | `Super+Shift+Ctrl+Space` | Theme picker |
 | Volume / Brightness keys | Island HUDs |
 | `Super+Shift+Arrows` | Swap the active window, or move the picked tile group |
+| `Super+Alt+T` | Key sounds on or off |
 
 ## Tile groups
 
@@ -108,6 +109,22 @@ which windows move together.
 
 The dots stay away from a workspace with a fullscreen window, a special
 workspace on top, or a tabbed window group.
+
+## Key sounds
+
+`Super+Alt+T`, or the keyboard button in the toggle island, plays a
+mechanical switch sound on every key press and release, with its own sound
+for Space and Backspace, a pistol shot for Enter (with the usual click
+when it comes back up), and a slightly different one for each row.
+The set is a smooth linear switch in the style of Gateron Milky Yellow,
+recorded on Alpaca switches (from [kbsim](https://github.com/tplai/kbsim),
+MIT).
+
+The sounds play only through the laptop's built-in speaker, even while
+music goes to Bluetooth or HDMI. Headphones in the laptop's own jack share
+that sound card, so they hear them too. `key_sound_volume` in
+`config.toml` sets how loud they are. On or off is remembered across
+restarts.
 
 ## Managing the shell
 
@@ -137,6 +154,7 @@ rounding = 20                # corner radius in px for the islands, their scoops
 two_column_app_grid = true   # the apps menu two to a line; false for a single list
 hide_delay = 3.5             # seconds an island stays after popping up on its own (0.5-60)
 workspace_hide_factor = 0.43 # the workspace bar's wait as a fraction of hide_delay (0-1, or 0-100 as %)
+key_sound_volume = 80        # loudness of the key sounds on the built-in speaker (0-100)
 ```
 
 Hyprland's window rounding follows the same value, so set it here rather

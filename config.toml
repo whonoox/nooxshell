@@ -23,3 +23,8 @@ hide_delay = 2
 # (0.43 is 1.5s at the default). A value above 1 is read as a percentage,
 # so 43 means the same.
 workspace_hide_factor = 0.43
+
+# Loudness of the key sounds (Super + Alt + T, or the keyboard button in
+# the toggle island), 0-100. They play on the built-in speaker only, on
+# top of its own volume.
+key_sound_volume = 80

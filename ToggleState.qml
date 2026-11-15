@@ -134,6 +134,30 @@ QtObject {
     }
 
     // ------------------------------------------------------------------
+    // Key Sounds State
+    // ------------------------------------------------------------------
+    // Kept across restarts in a file holding "on" or "off". KeySounds.qml
+    // is loaded while this is on.
+    readonly property string keySoundsPath: home + "/.local/state/nooxshell/key-sounds"
+    property bool keySounds: false
+
+    function toggleKeySounds() {
+        setKeySounds(!root.keySounds)
+    }
+
+    function setKeySounds(val) {
+        root.keySounds = !!val
+        Quickshell.execDetached(["sh", "-c", 'mkdir -p "${1%/*}" && printf %s "$2" > "$1"',
+            "sh", root.keySoundsPath, root.keySounds ? "on" : "off"])
+    }
+
+    property FileView keySoundsFile: FileView {
+        path: root.keySoundsPath
+        printErrors: false
+        onLoaded: root.keySounds = text().trim() === "on"
+    }
+
+    // ------------------------------------------------------------------
     // Stay Awake (Idle Inhibition) State
     // ------------------------------------------------------------------
     readonly property string stayAwakeDir: home + "/.local/state/omarchy/indicators"

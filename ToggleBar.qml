@@ -64,6 +64,11 @@ Scope {
         root.reveal("nightlight")
     }
 
+    function toggleKeySounds() {
+        ToggleState.toggleKeySounds()
+        root.reveal("keys")
+    }
+
     Connections {
         target: ToggleState
         function onMicMutedChanged() {
@@ -99,6 +104,11 @@ Scope {
         function onNightLightChanged() {
             if (root._initialized) {
                 root.reveal("nightlight")
+            }
+        }
+        function onKeySoundsChanged() {
+            if (root._initialized) {
+                root.reveal("keys")
             }
         }
     }
@@ -152,6 +162,13 @@ Scope {
         description: "Toggle night light blue light filter"
         appid: "quickshell"
         onPressed: root.toggleNightLight()
+    }
+
+    GlobalShortcut {
+        name: "keySoundsToggle"
+        description: "Toggle key sounds"
+        appid: "quickshell"
+        onPressed: root.toggleKeySounds()
     }
 
     // ------------------------------------------------------------------
@@ -211,6 +228,11 @@ Scope {
         function toggleNightLight(): string {
             root.toggleNightLight()
             return ToggleState.nightLight ? "nightlight_on" : "nightlight_off"
+        }
+
+        function toggleKeySounds(): string {
+            root.toggleKeySounds()
+            return ToggleState.keySounds ? "keys_on" : "keys_off"
         }
 
         function revealMic(): string {
@@ -276,6 +298,10 @@ Scope {
             return ToggleState.nightLight ? "nightlight_on" : "nightlight_off"
         }
 
+        function keySoundsStatus(): string {
+            return ToggleState.keySounds ? "keys_on" : "keys_off"
+        }
+
         function status(): string {
             return JSON.stringify({
                 notifDnd: ToggleState.dnd,
@@ -286,6 +312,7 @@ Scope {
                 fnLockAvailable: ToggleState.fnLockAvailable,
                 airplaneMode: ToggleState.airplaneMode,
                 nightLight: ToggleState.nightLight,
+                keySounds: ToggleState.keySounds,
                 visible: !root.hideBar,
                 lastTriggered: root.lastTriggered
             })
@@ -744,6 +771,54 @@ Scope {
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: root.toggleNightLight()
+                            }
+                        }
+
+                        // 8. Key Sounds Toggle (No button background, no border)
+                        Item {
+                            id: keysButton
+                            width: 24
+                            height: 24
+
+                            readonly property bool isKeys: ToggleState.keySounds
+                            readonly property bool isTriggered: root.lastTriggered === "keys"
+                            readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
+                            readonly property bool isHovered: keysMouse.containsMouse
+
+                            scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
+                            opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
+
+                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                            Image {
+                                id: keysRawIcon
+                                anchors.centerIn: parent
+                                width: 16
+                                height: 16
+                                sourceSize.width: 32
+                                sourceSize.height: 32
+                                source: "decorations/keyboard.svg"
+                                fillMode: Image.PreserveAspectFit
+                                visible: false
+                            }
+
+                            MultiEffect {
+                                anchors.fill: keysRawIcon
+                                source: keysRawIcon
+                                colorization: 1.0
+                                colorizationColor: keysButton.isKeys
+                                    ? Theme.brand
+                                    : (keysButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
+                                Behavior on colorizationColor { ColorAnimation { duration: 150 } }
+                            }
+
+                            MouseArea {
+                                id: keysMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.toggleKeySounds()
                             }
                         }
                     }

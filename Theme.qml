@@ -74,6 +74,11 @@ QtObject {
     // of hideDelay (1.5s of the default 3.5s).
     property real workspaceHideFactor: 1500 / 3500
     readonly property int workspaceHideDelay: Math.max(100, Math.round(hideDelay * workspaceHideFactor))
+
+    // key_sound_volume in config.toml, as a fraction: how loud the key
+    // sounds play on the built-in speaker, on top of its own volume.
+    property real keySoundVolume: 0.8
+
     // The toggle HUD keeps its own shorter wait, 2.5s of the default 3.5s,
     // and follows hide_delay in the same proportion.
     readonly property int toggleHideDelay: Math.max(100, Math.round(hideDelay * 2500 / 3500))
@@ -185,6 +190,11 @@ QtObject {
     function loadConfig(text) {
         if (!text) return
         var d = parseToml(text)
+
+        // Percent, 0-100. Missing or unreadable keeps 80.
+        var keyVolume = parseFloat(d.key_sound_volume)
+        root.keySoundVolume = isFinite(keyVolume)
+            ? Math.min(100, Math.max(0, keyVolume)) / 100 : 0.8
 
         // A missing or unreadable value keeps the default (true).
         var twoColumns = String(d.two_column_app_grid || "").toLowerCase()

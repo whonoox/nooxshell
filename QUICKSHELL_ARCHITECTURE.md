@@ -344,6 +344,13 @@ Dwindle keeps each workspace as a binary tree of splits, but its own commands on
 - **Moving.** `TileTree.neighbour` finds what a group trades places with one step over, `TileTree.swapped` builds the new tree, and `QsTiles.apply` rebuilds the workspace into it in one Lua call: float every window but the first, then tile each back with `preselect`, unfloat and `splitratio … exact`, the same path dwindle takes for a new window.
 - **The joined look.** A second surface on `WlrLayer.Bottom` (`quickshell-tile-groups-fuse`), under the windows, fills the picked group's inner gaps and the window corners that face into the group (`TileTree.fusion`) in `Theme.background` at Hyprland's window opacity, so the group reads as one piece. Being underneath, nothing it draws can cover a window, and nothing reaches under one either: the windows are see-through, and a fill behind them darkens them. Where an inner seam meets the group's edge it ends in a round-tipped notch.
 
+### 5.9 Key Sounds (`KeySounds.qml`)
+A switch sound on every key press and release, through the built-in speaker only.
+
+- **Keys.** Hyprland sees every key; the shell does not. While the sounds are on, `QsKeys.set(true)` adds an `input.keyboard.key` listener in Lua that dispatches `quickshell:keySound<Name>` for each event. The name is the sound, never the key: `R0`-`R4` by keyboard row, `Space`, `Enter`, `Backspace`, and `Up*` for releases. Off, there is no listener at all. A Hyprland reload starts with none, so the shell asks again on `configreloaded`.
+- **Loading.** `shell.qml` holds `KeySounds.qml` in a `LazyLoader` that is active only while `ToggleState.keySounds` is on, so with the sounds off no audio stream is open and a missing `qt6-multimedia` breaks only this feature. The toggle is kept in `~/.local/state/nooxshell/key-sounds`.
+- **Playback.** Three `SoundEffect`s per sound, taken in turn, so fast typing overlaps instead of cutting off; Qt mixes them into one PipeWire stream, corked between keys. Each has `audioDevice` set to the first `alsa_output.pci-*` output that is not HDMI, from `MediaDevices`, so the sounds stay on the laptop speaker whatever the default output is, and stay silent if there is no such output. The samples are 48 kHz mono WAV in `sounds/keys`, see its `LICENSE`; Enter's pistol shot is a Pixabay clip under the Pixabay Content License, also noted there.
+
 ---
 
 ## 6. Component Map & Screen Geometry
@@ -388,6 +395,7 @@ The following diagram illustrates the screen positions of each component in this
 | [`ThemePicker.qml`](file:///ThemePicker.qml) | Center Modal | `SUPER + SHIFT + CTRL + SPACE` |
 | [`CursorXRay.qml`](file:///CursorXRay.qml) | Dynamic Follower | `SUPER + ALT + C` or IPC (`cursorXRay toggle`) |
 | [`TileGroups.qml`](file:///TileGroups.qml) | Window Splits | Dots on tiled workspaces with three or more windows; hover, click or drag, `SUPER + SHIFT + arrows` |
+| [`KeySounds.qml`](file:///KeySounds.qml) | No Surface | `SUPER + ALT + T`, the toggle island, or IPC (`toggleBar toggleKeySounds`) |
 | [`RoundedOverlay.qml`](file:///RoundedOverlay.qml) | All Corners | Persistent inward bezel rounding across all connected monitors |
 
 ### 6.6 Bluetooth Bar Keys
