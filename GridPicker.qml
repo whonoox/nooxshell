@@ -34,16 +34,24 @@ Scope {
     property real monitorWidth: (Quickshell.screens && Quickshell.screens.length > 0 && Quickshell.screens[0].width > 0) ? Quickshell.screens[0].width : 1920
     property real monitorHeight: (Quickshell.screens && Quickshell.screens.length > 0 && Quickshell.screens[0].height > 0) ? Quickshell.screens[0].height : 1080
 
-    readonly property real cardWidth: 440
-    readonly property real cardHeight: 248
-    readonly property real colGap: 36
-    readonly property real rowGap: 28
+    // The grid is laid out for a 1920x1080 screen and scaled to fit the
+    // one it is on, so it fills the same share of the screen whatever the
+    // monitor's resolution or scale. A higher monitor scale shrinks the
+    // logical screen, and fixed sizes would swell with it.
+    readonly property real referenceWidth: 1920
+    readonly property real referenceHeight: 1080
+    readonly property real ui: Math.min(monitorWidth / referenceWidth, monitorHeight / referenceHeight)
+
+    readonly property real cardWidth: 440 * ui
+    readonly property real cardHeight: 248 * ui
+    readonly property real colGap: 36 * ui
+    readonly property real rowGap: 28 * ui
     readonly property real colStep: cardWidth + colGap
     readonly property real rowStep: cardHeight + rowGap
     readonly property real staggerY: (cardHeight + rowGap) / 2
-    readonly property real baseY: 70
+    readonly property real baseY: 70 * ui
     readonly property real centerMargin: Math.max(0, (monitorWidth - (3 * cardWidth + 2 * colGap)) / 2)
-    readonly property real cardRadius: 10
+    readonly property real cardRadius: 10 * ui
 
     readonly property int revealDuration: 300
     readonly property int applyDuration: 300
@@ -511,7 +519,7 @@ Scope {
                                 anchors.fill: parent
                                 radius: card.radius
                                 color: "transparent"
-                                border.width: (card.isSelected ? 3 : 1) * (card.isFocus ? 1.0 - root.zoomProgress : 1.0)
+                                border.width: (card.isSelected ? 3 : 1) * root.ui * (card.isFocus ? 1.0 - root.zoomProgress : 1.0)
                                 border.color: card.isSelected ? Theme.accent : Qt.rgba(1, 1, 1, 0.12)
                                 visible: border.width > 0.01
                             }
@@ -537,13 +545,13 @@ Scope {
 
             Text {
                 anchors.bottom: parent.bottom
-                anchors.bottomMargin: 26
+                anchors.bottomMargin: 26 * root.ui
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: root.selectedName.toUpperCase()
                 font.family: Theme.brandFont
-                font.pixelSize: 13
+                font.pixelSize: Math.max(1, Math.round(13 * root.ui))
                 font.bold: true
-                font.letterSpacing: 2
+                font.letterSpacing: 2 * root.ui
                 color: Theme.fgc
                 opacity: Math.max(0.0, (1.0 - root.zoomProgress) * 0.75)
                 visible: opacity > 0.01 && root.selectedName.length > 0
