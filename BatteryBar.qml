@@ -13,9 +13,22 @@ Scope{
     
     property bool hideBar: true
 
+    // Desktops and machines running straight off the mains still get a
+    // display device from UPower, just one that is not present and reads 0%.
+    // Without this, that 0% counts as critical and pins the bar on screen.
+    // Waiting for ready keeps the bar from flashing up as critical before
+    // the first reading arrives on a laptop too.
+    readonly property bool hasBattery: !!battery && battery.ready && battery.isPresent
+
     readonly property int batteryState: UPower.displayDevice.state
-    readonly property bool isCharging: battery.state === UPowerDeviceState.Charging
-    readonly property bool criticalBattery: battery.percentage <= 0.20 && !isCharging
+    // Running off the battery, as opposed to the mains. A worn-out battery
+    // on the charger can sit at a few percent as "not charging", "pending
+    // charge" or even "fully charged", so the charge state alone cannot
+    // tell a draining battery from one that is just plugged in.
+    readonly property bool onBattery: hasBattery && UPower.onBattery
+    // Only a draining battery is critical: a low reading on the mains is not
+    // going to run out, and pinning the bar for it would never let go.
+    readonly property bool criticalBattery: onBattery && battery.percentage <= 0.20
     readonly property bool lowBattery: battery.percentage <= 0.25
     readonly property bool mediumBattery: battery.percentage <= 0.50
     readonly property bool highBattery: battery.percentage <= 0.75
@@ -27,8 +40,17 @@ Scope{
         }
     }
 
+    // A battery that goes away (or never turns out to be there) takes the
+    // bar with it, critical or not.
+    onHasBatteryChanged: {
+        if (!hasBattery) {
+            autoHide.stop()
+            root.hideBar = true
+        }
+    }
+
     function reveal() {
-        if (!criticalBattery) {
+        if (hasBattery && !criticalBattery) {
             root.hideBar = false
             autoHide.restart()
         }
@@ -58,7 +80,7 @@ Scope{
     IpcHandler {
         target: "batteryBar"
         function toggle() {
-            if (!criticalBattery) {
+            if (hasBattery && !criticalBattery) {
                 if (root.hideBar) {
                     root.reveal()
                 } else {
@@ -83,7 +105,7 @@ Scope{
         description: "Show the current battery information with the panel window"
         appid: "quickshell"
         onPressed: {
-            if (!criticalBattery) {
+            if (root.hasBattery && !criticalBattery) {
                 if (root.hideBar) {
                     root.reveal()
                 } else {
@@ -241,8 +263,10 @@ Scope{
                     anchors.bottom: batteryFlex.bottom
                     anchors.bottomMargin: Theme.spacing / 2
                     anchors.horizontalCenter: batteryFlex.horizontalCenter
-                    visible: root.battery.state === UPowerDeviceState.Charging
-                    source: root.battery.percentage >= 0.20 ? "decorations/lightning-fill.svg" : "decorations/lightning-fill-red.svg"
+                    // On the mains, charging or not, so a battery that never
+                    // charges past a few percent still shows it is plugged in.
+                    visible: root.hasBattery && !root.onBattery
+                    source: root.criticalBattery ? "decorations/lightning-fill-red.svg" : "decorations/lightning-fill.svg"
                     width: 14
                     height: 14
                     sourceSize.width: 14

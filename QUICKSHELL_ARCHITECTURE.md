@@ -371,7 +371,7 @@ The following diagram illustrates the screen positions of each component in this
 | [`BluetoothBar.qml`](file:///BluetoothBar.qml) | `topRight` | `SUPER + CTRL + B` or IPC (`bluetoothBar toggle`) |
 | [`AudioBar.qml`](file:///AudioBar.qml) | `centerLeft` | Hardware volume keys via shim or `omarchy audio` commands |
 | [`BrightnessBar.qml`](file:///BrightnessBar.qml) | `centerLeft` | Hardware brightness keys via shim |
-| [`BatteryBar.qml`](file:///BatteryBar.qml) | `centerRight` | Power state changes, critical battery level, or `SUPER + CTRL + P` |
+| [`BatteryBar.qml`](file:///BatteryBar.qml) | `centerRight` | Power state changes, critical battery level, or `SUPER + CTRL + P`; stays hidden and ignores the keybind on machines without a battery |
 | [`OmarchyMenu.qml`](file:///OmarchyMenu.qml) | `bottomCenter` | `SUPER + SPACE`, `SUPER + ALT + SPACE`, or `omarchy menu` |
 | [`NotificationPanel.qml`](file:///NotificationPanel.qml) | `bottomRight` | Incoming desktop notifications or `SUPER + SHIFT + ALT + comma` |
 | [`WallpaperPicker.qml`](file:///WallpaperPicker.qml) | Center Modal | `SUPER + CTRL + SPACE` |
