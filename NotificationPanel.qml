@@ -594,7 +594,14 @@ Scope {
                     // Only the container is interactive; the rest of the
                     // full-screen overlay stays click-through so a toast never
                     // eats a click meant for the window beneath.
-                    ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                    // Only there when the list overflows: an idle scroll bar is
+                    // invisible but still sits over the right edge of the rows,
+                    // taking the pointer from the close buttons.
+                    ScrollBar.vertical: ScrollBar {
+                        id: listScroll
+                        policy: ScrollBar.AsNeeded
+                        visible: list.contentHeight > list.height
+                    }
 
                     delegate: Item {
                         id: row
@@ -628,7 +635,9 @@ Scope {
                             ? Theme.red
                             : (row.urgency === NotificationUrgency.Low ? Qt.darker(Theme.foreground, 1.4) : Theme.brand)
 
-                        width: list.width
+                        // Narrowed while the scroll bar shows, so it never
+                        // covers the close button.
+                        width: list.width - (listScroll.visible ? listScroll.width : 0)
                         height: rowColumn.height + Theme.spacing * 3
 
                         // A 50ms decrementing fraction rather than a wall-clock
@@ -688,6 +697,8 @@ Scope {
                             id: rowColumn
                             anchors.left: parent.left
                             anchors.right: parent.right
+                            // Clear of the close button in the corner.
+                            anchors.rightMargin: closeBtn.width + Theme.spacing
                             anchors.top: parent.top
                             anchors.topMargin: Theme.spacing * 1.5
                             spacing: Theme.spacing
@@ -807,6 +818,44 @@ Scope {
                                         }
                                     }
                                 }
+                            }
+                        }
+
+                        // Dismisses this toast. Drawn from two bars rather than
+                        // a glyph so it looks the same in every theme font.
+                        Rectangle {
+                            id: closeBtn
+                            width: 18
+                            height: 18
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.topMargin: Theme.spacing * 1.5 - 2
+                            radius: 5
+                            color: closeMouse.containsMouse
+                                ? Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 0.9)
+                                : "transparent"
+
+                            Repeater {
+                                model: [45, -45]
+                                delegate: Rectangle {
+                                    required property var modelData
+                                    anchors.centerIn: parent
+                                    width: 10
+                                    height: 1.5
+                                    radius: 0.75
+                                    rotation: modelData
+                                    antialiasing: true
+                                    color: closeMouse.containsMouse ? Theme.foreground : Theme.darkForeground
+                                }
+                            }
+
+                            MouseArea {
+                                id: closeMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                enabled: !root.isDismissing
+                                onClicked: root.dismissPopup(row.index)
                             }
                         }
 
