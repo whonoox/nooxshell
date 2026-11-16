@@ -1,0 +1,13 @@
+lock.wav, the sound the screen makes as it locks, is the iOS 5 lock sound
+(Apple), from a downloaded ios-5-lock-sound.mp3, cleaned up and cut to the
+two clicks of the lock itself:
+
+  ffmpeg -i ios-5-lock-sound.mp3 -af "highpass=f=150:poles=2,\
+    afftdn=nr=30:nf=-60:tn=1,atrim=start=0.43:end=0.82,\
+    asetpts=PTS-STARTPTS,silenceremove=start_periods=1:\
+    start_threshold=-55dB,afade=t=in:d=0.002,areverse,afade=t=in:d=0.08,\
+    areverse,volume=-10.8dB" -ac 1 -ar 48000 -c:a pcm_s16le lock.wav
+
+The high-pass removes a low rumble in the first 0.4 s, and afftdn the hiss
+under the whole recording, about -61 dB. It is a little louder than a key,
+the loudest 30 ms at -26 dB against the keys' -29 dB.

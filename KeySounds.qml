@@ -3,10 +3,10 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 
-// A switch sound on every key press and release, played only through the
-// laptop's own speaker, whatever the default output is. Loaded by
-// shell.qml only while ToggleState.keySounds is on, so nothing plays and
-// Hyprland reports no keys while it is off.
+// A switch sound on every key press and release, and a lock sound as the
+// screen locks, played only through the laptop's own speaker, whatever the
+// default output is. Loaded by shell.qml only while ToggleState.keySounds
+// is on, so nothing plays and Hyprland reports no keys while it is off.
 //
 // Hyprland sends each key as a global shortcut naming its sound, never the
 // key itself: keySoundR0-R4 for the five rows, keySoundSpace, keySoundEnter,
@@ -111,8 +111,11 @@ Scope {
         }
     }
 
-    readonly property string soundDir: decodeURIComponent(
-        String(Qt.resolvedUrl("sounds/keys/")).replace(/^file:\/\//, ""))
+    function localPath(url) {
+        return decodeURIComponent(String(Qt.resolvedUrl(url)).replace(/^file:\/\//, ""))
+    }
+    readonly property string soundDir: localPath("sounds/keys/")
+    readonly property string lockSound: localPath("sounds/lock/lock.wav")
 
     // At most this many sounds start in any one second. Typing never comes
     // near it; a runaway stream of key events cannot turn into a stream of
@@ -121,7 +124,12 @@ Scope {
     property var recent: []
 
     function play(name) {
-        if (!speaker || !sounds[name])
+        if (sounds[name])
+            playFile(soundDir + sounds[name] + ".wav")
+    }
+
+    function playFile(path) {
+        if (!speaker)
             return
         var now = Date.now()
         var kept = []
@@ -138,7 +146,46 @@ Scope {
         // default of 100 ms held each sound back by 60-75 ms, enough to
         // feel behind the key.
         Quickshell.execDetached(["pw-play", "--target", speaker, "--volume", volume,
-            "--latency", "256", soundDir + sounds[name] + ".wav"])
+            "--latency", "256", path])
+    }
+
+    // The screen lock. Omarchy's own shell locks the screen, whether from
+    // Super+Ctrl+L, the menu, going idle or the lid, and tells nothing
+    // else: Hyprland has no lock event and logind is never asked. It does
+    // log "omarchy lock <time> lock-requested" the moment it starts, once
+    // per lock, in the plain-text log.log of its Quickshell instance, so
+    // that file is followed.
+    //
+    // Each instance has its own directory, linked from by-shell/<md5 of
+    // the shell.qml path>, and the links of finished ones stay behind. The
+    // newest link is the running shell; it is looked for again every 5 s,
+    // so a restarted Omarchy shell is picked up.
+    readonly property string omarchyShellDir: Quickshell.env("XDG_RUNTIME_DIR") + "/quickshell/by-shell/"
+        + Qt.md5((Quickshell.env("OMARCHY_PATH") || "/usr/share/omarchy") + "/shell/shell.qml")
+
+    Process {
+        command: ["sh", "-c", `
+            dir=$1 cur= pid=
+            trap '[ -n "$pid" ] && kill "$pid"; exit' TERM INT HUP
+            while :; do
+                new=$(ls -t "$dir" 2>/dev/null | head -n 1)
+                if [ "$new" != "$cur" ]; then
+                    [ -n "$pid" ] && kill "$pid"
+                    cur=$new pid=
+                    if [ -n "$cur" ]; then
+                        tail -n 0 -F --pid=$$ "$dir/$cur/log.log" 2>/dev/null &
+                        pid=$!
+                    fi
+                fi
+                sleep 5 & wait $!
+            done`, "sh", root.omarchyShellDir]
+        running: true
+        stdout: SplitParser {
+            onRead: function(line) {
+                if (/ omarchy lock \S+ lock-requested$/.test(line))
+                    root.playFile(root.lockSound)
+            }
+        }
     }
 
     // Hyprland reports keys only while the hook is on. A Hyprland reload

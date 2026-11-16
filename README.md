@@ -135,7 +135,8 @@ closes the window (with the usual click when the key comes back up), and a
 slightly different one for each row.
 The set is a smooth linear switch in the style of Gateron Milky Yellow,
 recorded on Alpaca switches (from [kbsim](https://github.com/tplai/kbsim),
-MIT).
+MIT). With them on, locking the screen also plays a lock click, however it
+locks: `Super+Ctrl+L`, the menu, going idle or closing the lid.
 
 The sounds play only through the laptop's built-in speaker, even while
 music goes to Bluetooth or HDMI. Headphones in the laptop's own jack share
