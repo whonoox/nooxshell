@@ -91,7 +91,8 @@ end
 -- The shell's user settings live in config.toml next to the QML. The shell
 -- watches the file and pushes changes to Hyprland live; reading it here as
 -- well keeps a `hyprctl reload` from reverting them. Only flat
--- `key = number` lines are needed, so this is not a full TOML parser.
+-- `key = number` lines are needed (whole or decimal), so this is not a full
+-- TOML parser.
 M.config_path = (home or "") .. "/.config/quickshell/config.toml"
 
 local function read_config()
@@ -101,8 +102,8 @@ local function read_config()
     return config
   end
   for line in file:lines() do
-    local key, value = line:match("^%s*([%w_]+)%s*=%s*(%d+)")
-    if key then
+    local key, value = line:match("^%s*([%w_]+)%s*=%s*(%-?%d*%.?%d+)")
+    if key and tonumber(value) then
       config[key] = tonumber(value)
     end
   end
@@ -111,6 +112,39 @@ local function read_config()
 end
 
 M.config = read_config()
+
+-- rounding in config.toml, as Theme.qml reads it: whole pixels, capped at
+-- 20, the most the islands are laid out for. Missing or negative gives 20.
+function M.rounding()
+  local r = M.config.rounding
+  if not r or r < 0 then
+    return 20
+  end
+  return math.floor(math.min(r, 20))
+end
+
+-- active_opacity and inactive_opacity in config.toml, as Theme.qml reads
+-- them: 0.3-1, 1 for solid windows. Missing or unreadable gives 0.87, the
+-- see-through that lets the blur and grain show behind every window.
+function M.opacity(key)
+  local value = M.config[key]
+  if not value then
+    return 0.87
+  end
+  return math.min(1, math.max(0.3, value))
+end
+
+-- gaps in config.toml as Theme.clampGaps reads it: within 2-12 and even,
+-- an odd value rounding down, so gaps_in is a whole pixel. Missing or
+-- unreadable gives the default 4.
+function M.gaps()
+  local g = M.config.gaps
+  if not g or g < 0 then
+    return 4
+  end
+  g = math.min(12, math.max(2, g))
+  return g - g % 2
+end
 
 -- The X-Ray effect needs the global decoration blur.
 --
@@ -123,24 +157,30 @@ M.config = read_config()
 -- single most visible difference between the shell working and not.
 --
 -- The values match the ones this desktop was tuned with, so on a machine
--- that already has them the result is identical. The rounding comes from
--- the same config.toml as Theme.rounding, so the island corners line up
--- with the window corners.
+-- that already has them the result is identical. The rounding and the gaps
+-- come from the same config.toml as Theme.rounding and Theme.borderWidth,
+-- so the island corners and borders line up with the windows.
 function M.decorations()
+  local gaps = M.gaps()
   hl.config({
     general = {
       -- The gaps are part of the same calculation as the shell's own
-      -- border. The scoops are drawn with a 4px border, the same as
-      -- gaps_out, and the gap between two windows is the same again, so
-      -- the islands and the windows sit in one rhythm.
-      gaps_in = 2,
-      gaps_out = 4,
+      -- border. The scoops are drawn with a border of gaps_out, and the
+      -- gap between two windows is the same again (gaps_in on each side),
+      -- so the islands and the windows sit in one rhythm.
+      gaps_in = math.floor(gaps / 2),
+      gaps_out = gaps,
       border_size = 0,
     },
     decoration = {
-      -- Capped at 20 like Theme.rounding: the islands are laid out for
-      -- radii up to it.
-      rounding = math.min(M.config.rounding or 20, 20),
+      rounding = M.rounding(),
+
+      -- How see-through windows are, focused and not. Omarchy leaves most
+      -- windows solid, which hides the blur and its grain; these let them
+      -- show behind every window. Omarchy's own per-app opacity rules
+      -- (terminals, Glassy mode) multiply on top.
+      active_opacity = M.opacity("active_opacity"),
+      inactive_opacity = M.opacity("inactive_opacity"),
 
       blur = {
         enabled = true,

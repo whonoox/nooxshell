@@ -33,7 +33,7 @@ bash <(curl -fsSL https://github.com/whonoox/quickshell/raw/master/install.sh)
 To install or update to a specific release, name its tag:
 
 ```bash
-NOOXSHELL_REPO_REF=v1.0.1 bash <(curl -fsSL https://github.com/whonoox/quickshell/raw/v1.0.1/install.sh)
+NOOXSHELL_REPO_REF=v1.0.2 bash <(curl -fsSL https://github.com/whonoox/quickshell/raw/v1.0.2/install.sh)
 ```
 
 ### Nightly
@@ -67,6 +67,16 @@ and `--yes` leaves it out. On yes, it runs
 the theme is already there, it is only made current with
 `omarchy theme set nooxnpaints`, so local changes in it are kept. The
 repository URL is set in `manifest.json` under `theme`.
+
+Newer Ghostty, foot and GTK 4 apps (Files and the rest) ask Hyprland not
+to blur behind their windows, which leaves the wallpaper sharp behind them.
+The installer adds one setting to each so they ask for the blur:
+`background-blur = true` in `~/.config/ghostty/config`, `alpha=0.99` at
+the top of `~/.config/foot/foot.ini`, and a `backdrop-filter` rule in
+`~/.config/gtk-4.0/gtk.css` (GTK 4.24 and later). Each sits between
+`nooxshell blur` markers, which the uninstaller takes out. A file that
+already sets the value is left alone. Open windows pick it up when the app
+is restarted.
 
 The installer backs up every file it touches to
 `~/.local/state/nooxshell/backups/<timestamp>/` and writes the
@@ -157,21 +167,29 @@ live as soon as the file is saved.
 
 ```toml
 rounding = 20                # corner radius in px for the islands, their scoops and the windows (0-20)
+gaps = 4                     # px between windows and to the screen edge, and the islands' border (2-12, even)
+active_opacity = 0.87        # how see-through the focused window is (0.3-1, 1 is solid)
+inactive_opacity = 0.87      # the same for the other windows
 two_column_app_grid = true   # the apps menu two to a line; false for a single list
 hide_delay = 3.5             # seconds an island stays after popping up on its own (0.5-60)
 workspace_hide_factor = 0.43 # the workspace bar's wait as a fraction of hide_delay (0-1, or 0-100 as %)
 key_sound_volume = 80        # loudness of the key sounds on the built-in speaker (0-100)
 ```
 
-Hyprland's window rounding follows the same value, so set it here rather
-than in `looknfeel.lua`. Reinstalling keeps your copy.
+Hyprland's window rounding, gaps and opacity follow these values, so set
+them here rather than in `looknfeel.lua`. The see-through windows are what
+let the blurred, grainy wallpaper show behind them, as behind the islands;
+Omarchy's own per-app opacity (terminals, Glassy windows) multiplies on
+top, so its Opaque window mode no longer makes windows solid: set both
+opacities to 1 for that. An odd `gaps` rounds down to the even
+number below it, so the gap between two windows splits evenly. Reinstalling keeps your copy.
 
 ## Layout
 
 ```
 install.sh / uninstall.sh     one-click installer and rollback
 manifest.json                 declarative deployment manifest
-config.toml                   user settings (rounding, app grid, hide delays)
+config.toml                   user settings (rounding, gaps, app grid, hide delays)
 bin/nooxshell           management CLI
 hypr/                         Hyprland bindings, layer rules, autostart
 shims/                        command interceptors for ~/.local/bin

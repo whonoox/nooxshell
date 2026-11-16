@@ -335,6 +335,41 @@ remove_hypr_module() {
   ok "Removed the Hyprland module and its require line"
 }
 
+# Takes out the blocks the installer added so apps ask Hyprland for the
+# window blur (see enable_app_blur in install.sh). The pristine backup
+# already gives back these files as they were before the first install;
+# this covers an install that was upgraded into them, and keeps any edit
+# the user made around the block.
+APP_BLUR_BEGIN="nooxshell blur begin"
+APP_BLUR_END="nooxshell blur end"
+
+remove_app_blur() {
+  local config="$HOME/.config"
+  local entry file open close tmp
+  for entry in "$config/ghostty/config|#|" "$config/foot/foot.ini|#|" "$config/gtk-4.0/gtk.css|/*| */"; do
+    IFS='|' read -r file open close <<<"$entry"
+    [[ -f $file ]] && grep -qxF -- "$open $APP_BLUR_BEGIN$close" "$file" || continue
+    if (( DRY_RUN )); then
+      printf '  would remove the blur block from: %s\n' "$file"
+      continue
+    fi
+    tmp="$(mktemp)"
+    awk -v b="$open $APP_BLUR_BEGIN$close" -v e="$open $APP_BLUR_END$close" '
+      $0 == b { skip = 1; next }
+      skip && $0 == e { skip = 0; next }
+      !skip { print }
+    ' "$file" >"$tmp"
+    cat "$tmp" >"$file"
+    rm -f "$tmp"
+    # A gtk.css the installer created holds nothing else.
+    if [[ $file == */gtk.css ]] && ! grep -q '[^[:space:]]' "$file"; then
+      rm -f "$file"
+      rmdir "$(dirname "$file")" 2>/dev/null || true
+    fi
+  done
+  (( DRY_RUN )) || ok "Removed the app blur settings"
+}
+
 # shell.json is restored by restore_backups, which copies the pristine copy
 # over the current file. This only reports on the outcome, so a failure to
 # restore is not silently swallowed.
@@ -408,6 +443,7 @@ main() {
   remove_installed
   remove_empty_dirs
   remove_hypr_module
+  remove_app_blur
   report_omarchy_config
 
   if (( ! DRY_RUN )); then
