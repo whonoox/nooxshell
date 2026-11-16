@@ -48,15 +48,31 @@ Scope {
     // Bluetooth. With nothing like it, the sounds stay silent rather than
     // going to the default output. Headphones in the laptop's jack share
     // the card, so they get the sounds too.
+    //
+    // Cards differ in how they name their outputs: an HDA card has one
+    // analog-stereo output, a SOF card (most Intel laptops since 2020) one
+    // per jack, such as HiFi__Speaker__sink, HiFi__Headphones__sink and
+    // HiFi__HDMI1__sink. The display outputs never count; of the rest an
+    // output named for the speaker comes first, then an analog one, then
+    // whatever is left.
     readonly property var speaker: {
         var outs = devices.audioOutputs
+        var best = null
+        var bestRank = 0
         for (var i = 0; i < outs.length; i++) {
             var id = String(outs[i].id)
-            if (id.indexOf("alsa_output.pci-") === 0 && id.indexOf("hdmi") < 0)
-                return outs[i]
+            if (id.indexOf("alsa_output.pci-") !== 0 || /hdmi|displayport|__dp\d/i.test(id))
+                continue
+            var rank = /speaker/i.test(id) ? 3 : (/analog/i.test(id) ? 2 : 1)
+            if (rank > bestRank) {
+                best = outs[i]
+                bestRank = rank
+            }
         }
-        return null
+        return best
     }
+
+    onSpeakerChanged: console.info("KeySounds: playing on", speaker ? speaker.id : "nothing, no built-in speaker found")
 
     Component {
         id: effectComponent
