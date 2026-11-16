@@ -93,7 +93,7 @@
     { "src": "sounds/keys/up-generic.wav", "dest": "~/.config/quickshell/sounds/keys/up-generic.wav" },
     { "src": "sounds/keys/up-space.wav", "dest": "~/.config/quickshell/sounds/keys/up-space.wav" },
     { "src": "sounds/lock/NOTICE", "dest": "~/.config/quickshell/sounds/lock/NOTICE" },
-    { "src": "sounds/lock/lock.wav", "dest": "~/.config/quickshell/sounds/lock/lock.wav" },
+    { "src": "sounds/lock/lock_sound.wav", "dest": "~/.config/quickshell/sounds/lock/lock_sound.wav" },
     { "src": "decorations/airplane.svg", "dest": "~/.config/quickshell/decorations/airplane.svg" },
     { "src": "decorations/bell-fill.svg", "dest": "~/.config/quickshell/decorations/bell-fill.svg" },
     { "src": "decorations/bell-slash-fill.svg", "dest": "~/.config/quickshell/decorations/bell-slash-fill.svg" },

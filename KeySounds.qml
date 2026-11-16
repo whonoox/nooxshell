@@ -115,7 +115,7 @@ Scope {
         return decodeURIComponent(String(Qt.resolvedUrl(url)).replace(/^file:\/\//, ""))
     }
     readonly property string soundDir: localPath("sounds/keys/")
-    readonly property string lockSound: localPath("sounds/lock/lock.wav")
+    readonly property string lockSound: localPath("sounds/lock/lock_sound.wav")
 
     // At most this many sounds start in any one second. Typing never comes
     // near it; a runaway stream of key events cannot turn into a stream of
@@ -152,9 +152,10 @@ Scope {
     // The screen lock. Omarchy's own shell locks the screen, whether from
     // Super+Ctrl+L, the menu, going idle or the lid, and tells nothing
     // else: Hyprland has no lock event and logind is never asked. It does
-    // log "omarchy lock <time> lock-requested" the moment it starts, once
-    // per lock, in the plain-text log.log of its Quickshell instance, so
-    // that file is followed.
+    // log each step in the plain-text log.log of its Quickshell instance,
+    // so that file is followed. The click goes with "omarchy lock <time>
+    // session-locked=true", logged once per lock as the lock screen covers
+    // the display, about half a second after the lock was asked for.
     //
     // Each instance has its own directory, linked from by-shell/<md5 of
     // the shell.qml path>, and the links of finished ones stay behind. The
@@ -182,7 +183,7 @@ Scope {
         running: true
         stdout: SplitParser {
             onRead: function(line) {
-                if (/ omarchy lock \S+ lock-requested$/.test(line))
+                if (/ omarchy lock \S+ session-locked=true$/.test(line))
                     root.playFile(root.lockSound)
             }
         }
