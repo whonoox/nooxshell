@@ -15,12 +15,21 @@
 
 set -euo pipefail
 
-REPO_URL="${NOOXSHELL_REPO_URL:-https://github.com/whonoox/quickshell.git}"
-REPO_REF="${NOOXSHELL_REPO_REF:-master}"
 CACHE_DIR="${NOOXSHELL_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/nooxshell}"
 
 STATE_DIR="$HOME/.local/state/nooxshell"
 STATE_FILE="$STATE_DIR/state.json"
+
+# Fetch the branch the shell was installed from, which the installer
+# records, so a nightly install is removed with the nightly manifest.
+recorded_state() {
+  [[ -f $STATE_FILE ]] && command -v jq >/dev/null 2>&1 || return 0
+  jq -r --arg key "$1" '.[$key] // empty' "$STATE_FILE" 2>/dev/null || true
+}
+REPO_URL="${NOOXSHELL_REPO_URL:-$(recorded_state repo_url)}"
+REPO_URL="${REPO_URL:-https://github.com/whonoox/quickshell.git}"
+REPO_REF="${NOOXSHELL_REPO_REF:-$(recorded_state ref)}"
+REPO_REF="${REPO_REF:-master}"
 BACKUP_ROOT="$STATE_DIR/backups"
 PRISTINE_DIR="$STATE_DIR/pristine"
 
@@ -74,7 +83,9 @@ bootstrap() {
   if [[ -d $CACHE_DIR/repo/.git ]]; then
     git -C "$CACHE_DIR/repo" fetch --depth 1 origin "$REPO_REF" ||
       fail "could not fetch $REPO_URL"
-    git -C "$CACHE_DIR/repo" reset --hard "origin/$REPO_REF" ||
+    # FETCH_HEAD, not origin/$REPO_REF: the cache is a single-branch clone,
+    # so another branch never gets a remote-tracking ref.
+    git -C "$CACHE_DIR/repo" reset --hard FETCH_HEAD ||
       fail "could not update the cached checkout"
   else
     git clone --depth 1 --branch "$REPO_REF" "$REPO_URL" "$CACHE_DIR/repo" ||
@@ -152,6 +163,7 @@ restore_backups() {
   }
 
   local count=0
+  local failed=0
   local relative
   while IFS= read -r relative; do
     [[ -n $relative ]] || continue
@@ -166,12 +178,20 @@ restore_backups() {
       continue
     fi
 
+    # Remove before copying: a file the user cannot write to would make
+    # cp fail, and one failure must not abandon the rest of the rollback.
     mkdir -p "$(dirname "$HOME/$relative")"
-    cp -a "$source" "$HOME/$relative"
-    count=$((count + 1))
+    rm -f -- "$HOME/$relative" 2>/dev/null || true
+    if cp -a -- "$source" "$HOME/$relative"; then
+      count=$((count + 1))
+    else
+      warn "could not restore $HOME/$relative"
+      failed=$((failed + 1))
+    fi
   done <"$manifest_file"
 
   ok "Restored $count files from $backup_dir"
+  (( failed == 0 )) || warn "$failed files could not be restored; their backups are in $backup_dir/files"
 }
 
 remove_installed() {
@@ -273,6 +293,7 @@ remove_empty_dirs() {
   local dir
   for dir in \
     "$HOME/.config/quickshell/decorations" \
+    "$HOME/.config/quickshell/bin" \
     "$HOME/.config/quickshell"; do
     if [[ -d $dir ]] && [[ -z $(ls -A "$dir" 2>/dev/null) ]]; then
       if (( DRY_RUN )); then
@@ -305,7 +326,10 @@ remove_hypr_module() {
       $0 == e { skip = 0; next }
       !skip { print }
     ' "$require_file" >"$tmp"
-    mv "$tmp" "$require_file"
+    # The installer writes a blank line above the block; drop the blank
+    # lines left at the end. Rewritten in place to keep the permissions.
+    awk '{ lines[NR] = $0 } END { n = NR; while (n > 0 && lines[n] ~ /^[ \t]*$/) n--; for (i = 1; i <= n; i++) print lines[i] }' "$tmp" >"$require_file"
+    rm -f "$tmp"
   fi
 
   ok "Removed the Hyprland module and its require line"
@@ -359,6 +383,13 @@ main() {
 
   [[ -f $MANIFEST ]] || fail "manifest not found: $MANIFEST"
 
+  # A git checkout at the config path is a development copy, not an
+  # install: removing the deployed files there would delete files from the
+  # repository. Move the checkout elsewhere and install from it instead.
+  if [[ -e $HOME/.config/quickshell/.git ]]; then
+    fail "$HOME/.config/quickshell is a git checkout; move it out of ~/.config before uninstalling"
+  fi
+
   if (( DRY_RUN )); then
     info "Dry run: no changes will be made"
   else
@@ -381,6 +412,9 @@ main() {
 
   if (( ! DRY_RUN )); then
     rm -rf "$STATE_DIR"
+    # Wallpaper and theme thumbnails the pickers generated. The cached
+    # clone next to them is left: this script may be running from it.
+    rm -rf "$CACHE_DIR/thumbnails"
     # The pre-rename state directory, in case the install was never
     # migrated.
     rm -rf "$HOME/.local/state/omarchy-islands"

@@ -548,12 +548,34 @@ installer_repo() {
   return 1
 }
 
+# A field the installer recorded in the state file, or empty.
+recorded_state() {
+  local state="$HOME/.local/state/nooxshell/state.json"
+  [[ -f $state ]] || return 0
+  jq -r --arg key "$1" '.[$key] // empty' "$state" 2>/dev/null || true
+}
+
 cmd_update() {
   local repo
   repo="$(installer_repo)" ||
     fail "no installer found; re-run the one-liner install to restore it"
 
-  if [[ -d $repo/.git ]]; then
+  local cache="${NOOXSHELL_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/nooxshell}/repo"
+  local ref="${NOOXSHELL_REPO_REF:-$(recorded_state ref)}"
+  if [[ $repo == "$cache" ]]; then
+    # Installed with the one-liner: the cache is a shallow clone of one
+    # branch, which a pull cannot move to another, nor follow across a
+    # merge. Fetch the branch and reset to it, as the installer does. An
+    # install from before the branch was recorded uses the branch the
+    # cache was cloned on, so a nightly install stays on nightly.
+    if [[ -z $ref ]]; then
+      ref="$(git -C "$repo" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+      [[ $ref != HEAD ]] || ref=""
+    fi
+    ref="${ref:-master}"
+    git -C "$repo" fetch --depth 1 origin "$ref" || fail "could not fetch $ref"
+    git -C "$repo" reset --hard FETCH_HEAD || fail "could not update $repo"
+  elif [[ -d $repo/.git ]]; then
     # A dirty tree means the user has local edits that a pull could
     # conflict with. Say so plainly instead of surfacing git's error.
     if [[ -n $(git -C "$repo" status --porcelain) ]]; then
@@ -566,7 +588,11 @@ cmd_update() {
 
   local installer="$repo/install.sh"
   [[ -f $installer ]] || fail "no installer at $installer"
-  bash "$installer" --skip-deps
+  if [[ -n $ref ]]; then
+    NOOXSHELL_REPO_REF="$ref" bash "$installer" --skip-deps
+  else
+    bash "$installer" --skip-deps
+  fi
 
   cmd_restart
 }
@@ -577,7 +603,10 @@ cmd_uninstall() {
     # The installer is gone, so the uninstaller cannot be run from it.
     # The one-liner uninstall fetches a copy.
     echo "nooxshell: no installer found; fetching the uninstaller" >&2
-    bash <(curl -fsSL "${NOOXSHELL_REPO_URL:-https://github.com/whonoox/quickshell.git}/raw/${NOOXSHELL_REPO_REF:-master}/uninstall.sh")
+    local url="${NOOXSHELL_REPO_URL:-$(recorded_state repo_url)}"
+    url="${url:-https://github.com/whonoox/quickshell.git}"
+    local ref="${NOOXSHELL_REPO_REF:-$(recorded_state ref)}"
+    bash <(curl -fsSL "${url%.git}/raw/${ref:-master}/uninstall.sh")
     return
   }
 

@@ -294,19 +294,33 @@ check_dependencies() {
   fi
 }
 
+# backup_file PATH [SOURCE]
+#
+# SOURCE is the repository file about to be installed at PATH, when there
+# is one. A PATH that already matches it is the shell's own copy rather
+# than the user's original, so it is kept out of the pristine backup:
+# recorded there, the uninstaller would put the shell back instead of
+# removing it. That is the case on the machine the shell is developed on,
+# and after an install whose state directory was lost.
 backup_file() {
   local path="$1"
+  local source="${2:-}"
   (( DRY_RUN )) && return 0
   [[ -e $path ]] || return 0
 
   local relative="${path#$HOME_DIR/}"
+
+  local ours=0
+  if [[ -n $source && -f $source ]] && cmp -s "$source" "$path"; then
+    ours=1
+  fi
 
   # The pristine copy records the state before the *first* install, and it
   # is frozen once it exists. Checking per file is not enough: a second
   # install would add the files the first install deployed, and the
   # uninstaller would then restore the shell's own copies instead of the
   # user's originals.
-  if (( ! PRISTINE_FROZEN )) && [[ ! -e $PRISTINE_DIR/files/$relative ]]; then
+  if (( ! PRISTINE_FROZEN && ! ours )) && [[ ! -e $PRISTINE_DIR/files/$relative ]]; then
     mkdir -p "$(dirname "$PRISTINE_DIR/files/$relative")"
     cp -a "$path" "$PRISTINE_DIR/files/$relative"
     printf '%s\n' "$relative" >>"$PRISTINE_DIR/backup_manifest.json"
@@ -316,6 +330,17 @@ backup_file() {
   mkdir -p "$BACKUP_DIR/files/$(dirname "$relative")"
   cp -a "$path" "$BACKUP_DIR/files/$relative"
   printf '%s\n' "$relative" >>"$BACKUP_DIR/backup_manifest.json"
+}
+
+# Copies SOURCE to DEST, replacing whatever is there. The old file is
+# removed first rather than written over: a leftover the user cannot write
+# to (one created by root, or read-only) would otherwise stop the install
+# halfway. Removing it only needs the directory to be writable.
+replace_file() {
+  local source="$1" dest="$2"
+  rm -f -- "$dest" 2>/dev/null || true
+  cp -a -- "$source" "$dest" ||
+    fail "could not write $dest; check the ownership of $(dirname "$dest")"
 }
 
 install_files() {
@@ -345,7 +370,7 @@ install_files() {
       continue
     fi
 
-    backup_file "$dest"
+    backup_file "$dest" "$REPO_DIR/$src"
 
     # When the repo is itself the config directory, source and destination
     # are the same file; copying it onto itself is an error.
@@ -355,7 +380,7 @@ install_files() {
     fi
 
     mkdir -p "$(dirname "$dest")"
-    cp -a "$REPO_DIR/$src" "$dest"
+    replace_file "$REPO_DIR/$src" "$dest"
     count=$((count + 1))
   done < <(manifest_list '.files')
 
@@ -380,8 +405,9 @@ install_shims() {
       continue
     fi
 
-    backup_file "$dest"
+    backup_file "$dest" "$REPO_DIR/$src"
     mkdir -p "$(dirname "$dest")"
+    rm -f -- "$dest" 2>/dev/null || true
     install -Dm"$mode" "$REPO_DIR/$src" "$dest"
     count=$((count + 1))
   done < <(manifest_list '.shims')
@@ -415,6 +441,16 @@ check_brand_font() {
   fi
 }
 
+# Removes the empty lines at the end of a file, in place. The file is
+# rewritten rather than replaced, so its permissions are kept.
+strip_trailing_blank_lines() {
+  local file="$1" tmp
+  tmp="$(mktemp)"
+  awk '{ lines[NR] = $0 } END { n = NR; while (n > 0 && lines[n] ~ /^[ \t]*$/) n--; for (i = 1; i <= n; i++) print lines[i] }' "$file" >"$tmp"
+  cat "$tmp" >"$file"
+  rm -f "$tmp"
+}
+
 # Installs the Hyprland module and the single require line that loads it.
 install_hypr() {
   local module_src module_dest
@@ -433,9 +469,10 @@ install_hypr() {
     return 0
   fi
 
-  backup_file "$module_dest"
+  backup_file "$module_dest" "$REPO_DIR/$module_src"
   backup_file "$require_file"
   mkdir -p "$(dirname "$module_dest")"
+  rm -f -- "$module_dest" 2>/dev/null || true
   install -Dm644 "$REPO_DIR/$module_src" "$module_dest"
 
   [[ -f $require_file ]] || fail "Hyprland config not found: $require_file"
@@ -449,8 +486,13 @@ install_hypr() {
       $0 == e { skip = 0; next }
       !skip { print }
     ' "$require_file" >"$tmp"
-    mv "$tmp" "$require_file"
+    cat "$tmp" >"$require_file"
+    rm -f "$tmp"
   fi
+
+  # Drop the blank lines at the end of the file before appending, so the
+  # one blank line written below does not pile up on every reinstall.
+  strip_trailing_blank_lines "$require_file"
 
   {
     echo ""
@@ -620,8 +662,9 @@ install_cli() {
     return 0
   fi
 
-  backup_file "$dest"
+  backup_file "$dest" "$REPO_DIR/$src"
   mkdir -p "$(dirname "$dest")"
+  rm -f -- "$dest" 2>/dev/null || true
   install -Dm"$mode" "$REPO_DIR/$src" "$dest"
   ok "Installed nooxshell CLI"
 }
@@ -652,11 +695,22 @@ check_path_order() {
 write_state() {
   (( DRY_RUN )) && return 0
 
+  # The branch the shell came from, so `nooxshell update` and the
+  # uninstaller fetch the same one. The cached clone keeps the name of the
+  # branch it was first cloned on even after a reset to another, so for it
+  # the requested ref is the truth; a local checkout reports its own.
+  local ref="$REPO_REF"
+  if [[ $REPO_DIR != "$CACHE_DIR/repo" && -d $REPO_DIR/.git ]]; then
+    ref="$(git -C "$REPO_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || printf '%s' "$REPO_REF")"
+  fi
+
   jq -n \
     --arg name "$(manifest_get '.name')" \
     --arg version "$(manifest_get '.version')" \
     --arg installed_at "$(date -Iseconds)" \
     --arg repo "$REPO_DIR" \
+    --arg repo_url "$REPO_URL" \
+    --arg ref "$ref" \
     --arg config "$CONFIG_DIR" \
     --arg hypr_module "$(expand_path "$(manifest_get '.hypr.module.dest')")" \
     --arg hypr_require "$(expand_path "$(manifest_get '.hypr.require.file')")" \
@@ -666,6 +720,8 @@ write_state() {
        version: $version,
        installed_at: $installed_at,
        repo: $repo,
+       repo_url: $repo_url,
+       ref: $ref,
        config: $config,
        hypr_module: $hypr_module,
        hypr_require: $hypr_require,
