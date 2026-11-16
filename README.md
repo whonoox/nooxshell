@@ -130,8 +130,9 @@ workspace on top, or a tabbed window group.
 
 `Super+Alt+T`, or the keyboard button in the toggle island, plays a
 mechanical switch sound on every key press and release, with its own sound
-for Space and Backspace, a pistol shot for Enter (with the usual click
-when it comes back up), and a slightly different one for each row.
+for Space and Backspace, a pistol shot for Enter and for `Super+W`, which
+closes the window (with the usual click when the key comes back up), and a
+slightly different one for each row.
 The set is a smooth linear switch in the style of Gateron Milky Yellow,
 recorded on Alpaca switches (from [kbsim](https://github.com/tplai/kbsim),
 MIT).

@@ -476,6 +476,23 @@ end
 
 local KEY_RELEASES = { Space = "UpSpace", Enter = "UpEnter", Backspace = "UpBackspace" }
 
+-- Super+W closes the window, so it fires the same shot as Enter. Only
+-- Super on its own: Super+Shift+W and Super+Ctrl+W do other things.
+local W, SUPERS = 25, { 133, 134 }
+local OTHER_MODS = { 37, 105, 50, 62, 64, 108 } -- Ctrl, Shift, Alt
+
+local function closesWindow(pressed)
+  if not (pressed[SUPERS[1]] or pressed[SUPERS[2]]) then
+    return false
+  end
+  for _, code in ipairs(OTHER_MODS) do
+    if pressed[code] then
+      return false
+    end
+  end
+  return true
+end
+
 -- Keys that go down (or up) within CHORD_MS of each other sound as one.
 -- Laptop firmware sends some function keys as shortcuts, Super+P,
 -- Super+Shift+S or Ctrl+Alt+Tab, two or three keys within 1-5 ms of each
@@ -510,6 +527,7 @@ function QsKeys.set(on)
   -- the key coming up, about as long after the press as a real tap. A
   -- press with a new time always sounds, whatever pressed[] says.
   QsKeys.pressed = {}
+  QsKeys.downSound = {}
   QsKeys.upSeq = (QsKeys.upSeq or 0) + 1
   QsKeys.pendingUp = {}
   QsKeys.lastDown = nil
@@ -519,7 +537,9 @@ function QsKeys.set(on)
   end
   QsKeys.watch = hl.on("input.keyboard.key", function(keycode, time, state)
     local pressed = QsKeys.pressed
-    local sound = KEY_SOUNDS[keycode] or "R4"
+    -- A release sounds like its press: the shot's own up click after
+    -- Super+W, even when Super came up first.
+    local sound = QsKeys.downSound[keycode] or KEY_SOUNDS[keycode] or "R4"
     if state == 0 then
       if pressed[keycode] == nil then
         return
@@ -534,11 +554,13 @@ function QsKeys.set(on)
           end
           QsKeys.pendingUp[keycode] = nil
           QsKeys.pressed[keycode] = nil
+          QsKeys.downSound[keycode] = nil
           hl.dispatch(hl.dsp.global("quickshell:keySound" .. (KEY_RELEASES[sound] or "Up")))
         end, { timeout = TAP_MS, type = "oneshot" })
         return
       end
       pressed[keycode] = nil
+      QsKeys.downSound[keycode] = nil
       QsKeys.pendingUp[keycode] = nil
       -- Events can arrive a millisecond out of order, hence math.abs.
       local chord = QsKeys.lastUp ~= nil and math.abs(time - QsKeys.lastUp) < CHORD_MS
@@ -554,6 +576,8 @@ function QsKeys.set(on)
       end
       pressed[keycode] = time
       QsKeys.pendingUp[keycode] = nil
+      sound = (keycode == W and closesWindow(pressed)) and "Enter" or (KEY_SOUNDS[keycode] or "R4")
+      QsKeys.downSound[keycode] = sound
       local chord = QsKeys.lastDown ~= nil and math.abs(time - QsKeys.lastDown) < CHORD_MS
       QsKeys.lastDown = time
       if chord then
