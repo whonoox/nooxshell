@@ -53,8 +53,7 @@ Scope {
     CursorXRay{}
     TileGroups{}
 
-    // Only while on: nothing plays and no keys are reported otherwise, and
-    // a missing Qt Multimedia breaks the key sounds alone, not the shell.
+    // Only while on: nothing plays and no keys are reported otherwise.
     LazyLoader {
         active: ToggleState.keySounds
         source: Qt.resolvedUrl("KeySounds.qml")

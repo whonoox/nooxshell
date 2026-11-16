@@ -25,13 +25,14 @@
       "wireplumber",
       "libpulse",
       "upower",
-      "qt6-multimedia",
+      "pipewire-audio",
       "brightnessctl",
       "jq",
       "fontconfig"
     ],
     "commands": {
       "qs": "quickshell",
+      "pw-play": "pipewire-audio",
       "hyprctl": "hyprland",
       "nmcli": "networkmanager",
       "wpctl": "wireplumber",
