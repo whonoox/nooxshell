@@ -134,8 +134,11 @@ Scope {
         }
         kept.push(now)
         recent = kept
+        // --latency 256 asks for a 256-sample (about 5 ms) buffer. pw-play's
+        // default of 100 ms held each sound back by 60-75 ms, enough to
+        // feel behind the key.
         Quickshell.execDetached(["pw-play", "--target", speaker, "--volume", volume,
-            soundDir + sounds[name] + ".wav"])
+            "--latency", "256", soundDir + sounds[name] + ".wav"])
     }
 
     // Hyprland reports keys only while the hook is on. A Hyprland reload
