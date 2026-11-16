@@ -132,6 +132,10 @@ that sound card, so they hear them too. `key_sound_volume` in
 `config.toml` sets how loud they are. On or off is remembered across
 restarts.
 
+If the shell ever grows by more than 1.5 GB while the sounds are on,
+they turn themselves off and stay off, with a notification and the
+details in `nooxshell log`.
+
 ## Managing the shell
 
 ```bash

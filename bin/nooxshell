@@ -401,10 +401,21 @@ cmd_start() {
   # Right after a kill, the old instance's lock is still registered for a
   # moment and `qs -n` refuses to start with "An instance of this
   # configuration is already running.". Retry until the lock clears.
+  #
+  # The shell gets its own systemd scope in app.slice, like the one
+  # Hyprland starts it in at login. Started straight from a terminal it
+  # would stay in the terminal's scope, even detached, and anything that
+  # ends that scope, such as systemd-oomd, would take the terminal with it,
+  # or the shell with the terminal.
+  local launcher=()
+  if command -v systemd-run >/dev/null 2>&1 && systemctl --user show-environment >/dev/null 2>&1; then
+    launcher=(systemd-run --user --scope --quiet --collect --slice=app.slice)
+  fi
+
   local launched=0
   local waited=0
   while (( waited < 100 )); do
-    if qs -d -n -p "$QS_PATH" >/dev/null 2>&1; then
+    if "${launcher[@]}" qs -d -n -p "$QS_PATH" >/dev/null 2>&1; then
       launched=1
       break
     fi

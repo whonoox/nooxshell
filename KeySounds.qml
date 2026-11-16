@@ -2,6 +2,7 @@ import QtQuick
 import QtMultimedia
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 
 // A switch sound on every key press and release, played only through the
 // laptop's own speaker, whatever the default output is. Loaded by
@@ -72,7 +73,10 @@ Scope {
         return best
     }
 
-    onSpeakerChanged: console.info("KeySounds: playing on", speaker ? speaker.id : "nothing, no built-in speaker found")
+    onSpeakerChanged: {
+        stats.speakerChanges++
+        console.info("KeySounds: playing on", speaker ? speaker.id : "nothing, no built-in speaker found")
+    }
 
     Component {
         id: effectComponent
@@ -87,12 +91,83 @@ Scope {
     property var turn: ({})
 
     function play(name) {
+        stats.plays++
         var copies = pool[name]
         if (!copies)
             return
         var i = turn[name] || 0
         turn[name] = (i + 1) % copies.length
         copies[i].play()
+    }
+
+    // ------------------------------------------------------------------
+    // Memory watchdog
+    // ------------------------------------------------------------------
+    // One report had the shell grow by gigabytes a minute with the key
+    // sounds on, until the system ran out of memory, and the sounds being
+    // remembered as on brought it back after a reboot. Whatever the cause,
+    // the sounds turn themselves off, for good, once the shell has grown
+    // by memoryLimit since they came on. The counters below go into the
+    // log every minute while the shell grows, and when the watchdog trips,
+    // so a report says what was happening.
+    readonly property real memoryLimitKb: 1536 * 1024
+    property real baseKb: 0
+    property real lastLoggedKb: 0
+    property bool tripped: false
+    // Readings taken by the timer. FileView also reads the file as soon
+    // as it is made, before the sounds are loaded, which is ignored: the
+    // baseline is the first reading taken 10 s in.
+    property int checks: 0
+    property var stats: ({ plays: 0, speakerChanges: 0, rawEvents: 0, reloads: 0 })
+    readonly property double startedAt: Date.now()
+
+    function statsText(kb) {
+        var minutes = ((Date.now() - startedAt) / 60000).toFixed(1)
+        return "rss " + Math.round(kb / 1024) + " MB (+" + Math.round((kb - baseKb) / 1024)
+            + " MB in " + minutes + " min), plays " + stats.plays
+            + ", speaker changes " + stats.speakerChanges
+            + ", Hyprland events " + stats.rawEvents + ", reloads " + stats.reloads
+            + ", speaker " + (speaker ? speaker.id : "none")
+    }
+
+    FileView {
+        id: status
+        path: "/proc/self/status"
+        printErrors: false
+        onLoaded: {
+            var m = /VmRSS:\s+(\d+)/.exec(text())
+            if (!m || root.tripped || root.checks === 0)
+                return
+            var kb = Number(m[1])
+            if (root.baseKb === 0) {
+                root.baseKb = kb
+                root.lastLoggedKb = kb
+                return
+            }
+            if (kb - root.lastLoggedKb > 100 * 1024) {
+                root.lastLoggedKb = kb
+                console.warn("KeySounds: growing,", root.statsText(kb))
+            }
+            if (kb - root.baseKb > root.memoryLimitKb) {
+                root.tripped = true
+                console.error("KeySounds: turned off by the memory watchdog,", root.statsText(kb))
+                Quickshell.execDetached(["notify-send", "-u", "critical", "-a", "nooxshell",
+                    "Key sounds turned off",
+                    "The shell grew by " + Math.round((kb - root.baseKb) / 1024)
+                    + " MB while they were on. Details are in nooxshell log."])
+                ToggleState.setKeySounds(false)
+            }
+        }
+    }
+
+    Timer {
+        interval: 10000
+        running: !root.tripped
+        repeat: true
+        onTriggered: {
+            root.checks++
+            status.reload()
+        }
     }
 
     // Hyprland reports keys only while the hook is on. A Hyprland reload
@@ -104,8 +179,11 @@ Scope {
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            if (event.name === "configreloaded")
+            root.stats.rawEvents++
+            if (event.name === "configreloaded") {
+                root.stats.reloads++
                 root.sync(true)
+            }
         }
     }
 
