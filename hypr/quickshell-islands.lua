@@ -476,6 +476,14 @@ end
 
 local KEY_RELEASES = { Space = "UpSpace", Enter = "UpEnter", Backspace = "UpBackspace" }
 
+-- Keys that go down (or up) within CHORD_MS of each other sound as one.
+-- Laptop firmware sends some function keys as shortcuts, Super+P,
+-- Super+Shift+S or Ctrl+Alt+Tab, two or three keys within 1-5 ms of each
+-- other, and a click for each stacked into a buzz. Two keys a person
+-- presses are at least about 10 ms apart, and closer than that two clicks
+-- would be heard as one anyway.
+local CHORD_MS = 8
+
 function QsKeys.set(on)
   if QsKeys.watch then
     pcall(function()
@@ -489,7 +497,14 @@ function QsKeys.set(on)
   -- event can also arrive twice, so a press already sounded at that time,
   -- or a release of a key not down, is skipped too. pressed[keycode] is
   -- the time of the key's press while it is down.
+  --
+  -- Some hardware keys (brightness, mic mute, airplane mode on an IdeaPad)
+  -- send their press and release with the same time. That release reads
+  -- as a repeat and is skipped, so the key never comes up; a press with a
+  -- new time therefore always sounds, whatever pressed[] says.
   QsKeys.pressed = {}
+  QsKeys.lastDown = nil
+  QsKeys.lastUp = nil
   if not on then
     return
   end
@@ -501,12 +516,23 @@ function QsKeys.set(on)
         return
       end
       pressed[keycode] = nil
+      -- Events can arrive a millisecond out of order, hence math.abs.
+      local chord = QsKeys.lastUp ~= nil and math.abs(time - QsKeys.lastUp) < CHORD_MS
+      QsKeys.lastUp = time
+      if chord then
+        return
+      end
       sound = KEY_RELEASES[sound] or "Up"
     else
-      if pressed[keycode] ~= nil then
+      if pressed[keycode] == time then
         return
       end
       pressed[keycode] = time
+      local chord = QsKeys.lastDown ~= nil and math.abs(time - QsKeys.lastDown) < CHORD_MS
+      QsKeys.lastDown = time
+      if chord then
+        return
+      end
     end
     hl.dispatch(hl.dsp.global("quickshell:keySound" .. sound))
   end)
