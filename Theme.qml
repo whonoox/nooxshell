@@ -52,10 +52,12 @@ QtObject {
 
     // Dimensions
     //
-    // borderWidth matches the compositor's gaps_out, which the shell's
-    // Hyprland module sets. The scoops are drawn with the same border as
-    // the gap between two windows, so the islands and the windows sit in
-    // one rhythm. Keep the two in step.
+    // borderWidth is gaps in config.toml: the same value is pushed to
+    // Hyprland as gaps_out, with gaps_in at half of it, so the scoops are
+    // drawn with the same border as the gap between two windows and the
+    // gap to the screen edge, and the islands and the windows sit in one
+    // rhythm. It is kept even (gaps_in has to be a whole pixel) and within
+    // minGaps-maxGaps; see clampGaps.
     //
     // rounding comes from config.toml and is pushed to Hyprland's
     // decoration:rounding, so window corners follow the islands. It is
@@ -89,7 +91,9 @@ QtObject {
     // margins) follows rounding.
     readonly property int unit: 20
     readonly property real spacing: 6
-    readonly property int borderWidth: 4
+    property int borderWidth: 4
+    readonly property int minGaps: 2
+    readonly property int maxGaps: 12
     // Radius of the off-screen turn that ends each scoop flare (see
     // ScoopContour). On screen it leaves the border running on along the
     // screen edge for sqrt((c + d)^2 - c^2) px past the flare, which at
@@ -133,6 +137,10 @@ QtObject {
     // plus the flares above and below (rounding + 2 * spacing each) and
     // room for the scoop's edge caps.
     readonly property int sideSegmentHeight: 18
+    // Their width: a 34px column of bars, the spacing on the inner side and
+    // the border on both, 48 at the default gaps. The column keeps its width
+    // and the island grows with the border, as every other island does.
+    readonly property int sidePanelWidth: 34 + spacing + 2 * borderWidth
     readonly property int sidePanelHeight: 4 * (sideSegmentHeight + spacing / 2) + Math.ceil(titleCaps.height)
         + 2 * (rounding + spacing * 2) + 2 * scoopCapOverhang
     property TextMetrics titleCaps: TextMetrics {
@@ -231,7 +239,23 @@ QtObject {
         decoration.push("active_opacity = " + windowOpacity(d.active_opacity))
         decoration.push("inactive_opacity = " + windowOpacity(d.inactive_opacity))
 
-        Quickshell.execDetached(["hyprctl", "eval", "hl.config({ decoration = { " + decoration.join(", ") + " } })"])
+        // Missing or unreadable is the default 4, as in the Hyprland module.
+        var g = clampGaps(parseInt(d.gaps, 10)) || 4
+        root.borderWidth = g
+
+        Quickshell.execDetached(["hyprctl", "eval", "hl.config({ decoration = { " + decoration.join(", ")
+            + " }, general = { gaps_in = " + (g / 2) + ", gaps_out = " + g + " } })"])
+    }
+
+    // gaps from config.toml as the shell uses it, or 0 when unreadable. Kept
+    // even so gaps_in, half of it, is a whole pixel and two windows sit
+    // exactly one gap apart: an odd value rounds down (5 is 4). Held within
+    // minGaps-maxGaps, the widths the islands are laid out for. The Hyprland
+    // module (hypr/quickshell-islands.lua) applies the same rule.
+    function clampGaps(g) {
+        if (!isFinite(g) || g < 0) return 0
+        g = Math.min(root.maxGaps, Math.max(root.minGaps, g))
+        return g - g % 2
     }
 
     function windowOpacity(value) {

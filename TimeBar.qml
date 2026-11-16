@@ -189,15 +189,15 @@ Scope {
                 y: root.hideAll ? -(height + 20) : 0
 
                 // The content is padded by Theme.unit and keeps its size; the
-                // flares on either side take rounding + 4 each, so the card
+                // flares on either side take rounding + borderWidth each, so the card
                 // widens and narrows with the rounding instead.
                 width: (root.isExpanded
                     ? Math.max(timeText.implicitWidth, dayText.implicitWidth, dateText.implicitWidth) + Theme.unit * 2
-                    : (timeText.implicitWidth + Theme.unit)) + 2 * (Theme.rounding + 4)
+                    : (timeText.implicitWidth + Theme.unit)) + 2 * (Theme.rounding + Theme.borderWidth)
 
                 height: (root.isExpanded
                     ? (summaryHeader.height + detailsColumn.implicitHeight + Theme.spacing * 2)
-                    : summaryHeader.height) + 4
+                    : summaryHeader.height) + Theme.borderWidth
 
                 Behavior on width {
                     NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
@@ -222,9 +222,9 @@ Scope {
                 Item {
                     id: background
                     anchors.fill: parent
-                    anchors.leftMargin: Theme.rounding + 4
-                    anchors.rightMargin: Theme.rounding + 4
-                    anchors.bottomMargin: 4
+                    anchors.leftMargin: Theme.rounding + Theme.borderWidth
+                    anchors.rightMargin: Theme.rounding + Theme.borderWidth
+                    anchors.bottomMargin: Theme.borderWidth
                     clip: true
 
                     // Click to cycle between collapsed and expanded views with timer reset
@@ -250,7 +250,7 @@ Scope {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.top: parent.top
-                        height: Theme.topIslandHeight - 4
+                        height: Theme.topIslandHeight - Theme.borderWidth
 
                         Text {
                             id: timeText

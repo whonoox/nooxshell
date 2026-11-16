@@ -757,8 +757,8 @@ Scope {
                     anchors.right: parent.right
                     y: root.hideAll ? -(height + 30) : 0
 
-                    width: root.isExpanded ? 390 + 4 : btLabel.implicitWidth + (batteryPill.visible ? (batteryPill.width + Theme.spacing) : 0) + Theme.unit * 2 + Theme.rounding + 4
-                    height: root.isExpanded ? Math.min(520, summaryHeader.height + detailsColumn.implicitHeight + Theme.rounding + Theme.spacing * 2) + 4 : Theme.topIslandHeight + Theme.rounding
+                    width: root.isExpanded ? 390 + Theme.borderWidth : btLabel.implicitWidth + (batteryPill.visible ? (batteryPill.width + Theme.spacing) : 0) + Theme.unit * 2 + Theme.rounding + Theme.borderWidth
+                    height: root.isExpanded ? Math.min(520, summaryHeader.height + detailsColumn.implicitHeight + Theme.rounding + Theme.spacing * 2) + Theme.borderWidth : Theme.topIslandHeight + Theme.rounding
 
                     Behavior on width {
                         NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
@@ -784,8 +784,8 @@ Scope {
                     Item {
                         id: background
                         anchors.fill: parent
-                        anchors.leftMargin: Theme.rounding + 4
-                        anchors.bottomMargin: Theme.rounding + 4
+                        anchors.leftMargin: Theme.rounding + Theme.borderWidth
+                        anchors.bottomMargin: Theme.rounding + Theme.borderWidth
                         clip: true
 
                         // Swallow clicks on card so they do NOT bubble to Layer 0 backdrop
@@ -802,7 +802,7 @@ Scope {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            height: Theme.topIslandHeight - 4
+                            height: Theme.topIslandHeight - Theme.borderWidth
 
                             // Click header to toggle expansion
                             MouseArea {

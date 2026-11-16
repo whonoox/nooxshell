@@ -150,7 +150,7 @@ Scope {
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
             exclusionMode: ExclusionMode.Ignore
 
-            implicitWidth: 48
+            implicitWidth: Theme.sidePanelWidth
             // Same height as the other side panels; see Theme.sidePanelHeight.
             implicitHeight: Theme.sidePanelHeight
             color: "transparent"

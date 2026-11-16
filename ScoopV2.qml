@@ -16,7 +16,7 @@ Item {
     property real capRadius: Theme.scoopCapRadius
 
     // Border attributes (X-Ray native compositor border: near-zero alpha for 0-blur see-through)
-    property real borderWidth: 4
+    property real borderWidth: Theme.borderWidth
     property color borderColor: Qt.rgba(0, 0, 0, 0.01)
 
     // Base minimum geometric constraints for single shape curve integrity

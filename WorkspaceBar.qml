@@ -559,7 +559,7 @@ Scope {
                 anchors.left: parent.left
                 y: root.hudVisible ? 0 : -(height + 20)
 
-                width: contentRow.implicitWidth + Theme.rounding + Theme.spacing * 4 + 4
+                width: contentRow.implicitWidth + Theme.rounding + Theme.spacing * 4 + Theme.borderWidth
                 height: Theme.topIslandHeight + Theme.rounding
 
                 Behavior on y {
@@ -585,8 +585,8 @@ Scope {
                     anchors.top: parent.top
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.rightMargin: Theme.rounding + 4
-                    height: Theme.topIslandHeight - 4
+                    anchors.rightMargin: Theme.rounding + Theme.borderWidth
+                    height: Theme.topIslandHeight - Theme.borderWidth
                     clip: true
 
                     RowLayout {
