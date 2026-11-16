@@ -484,6 +484,10 @@ local KEY_RELEASES = { Space = "UpSpace", Enter = "UpEnter", Backspace = "UpBack
 -- would be heard as one anyway.
 local CHORD_MS = 8
 
+-- How long after the press a key that reports no release of its own
+-- sounds as coming up (see QsKeys.set).
+local TAP_MS = 100
+
 function QsKeys.set(on)
   if QsKeys.watch then
     pcall(function()
@@ -499,10 +503,15 @@ function QsKeys.set(on)
   -- the time of the key's press while it is down.
   --
   -- Some hardware keys (brightness, mic mute, airplane mode on an IdeaPad)
-  -- send their press and release with the same time. That release reads
-  -- as a repeat and is skipped, so the key never comes up; a press with a
-  -- new time therefore always sounds, whatever pressed[] says.
+  -- send their press and release together, with the same time, the moment
+  -- the key goes down; nothing comes when it is let go. A release with its
+  -- press's time is therefore held back for TAP_MS: a held key's repeat
+  -- press follows it at once and cancels it, and otherwise it sounds as
+  -- the key coming up, about as long after the press as a real tap. A
+  -- press with a new time always sounds, whatever pressed[] says.
   QsKeys.pressed = {}
+  QsKeys.upSeq = (QsKeys.upSeq or 0) + 1
+  QsKeys.pendingUp = {}
   QsKeys.lastDown = nil
   QsKeys.lastUp = nil
   if not on then
@@ -512,10 +521,25 @@ function QsKeys.set(on)
     local pressed = QsKeys.pressed
     local sound = KEY_SOUNDS[keycode] or "R4"
     if state == 0 then
-      if pressed[keycode] == nil or pressed[keycode] == time then
+      if pressed[keycode] == nil then
+        return
+      end
+      if pressed[keycode] == time then
+        QsKeys.upSeq = QsKeys.upSeq + 1
+        local seq = QsKeys.upSeq
+        QsKeys.pendingUp[keycode] = seq
+        hl.timer(function()
+          if QsKeys.pendingUp[keycode] ~= seq then
+            return
+          end
+          QsKeys.pendingUp[keycode] = nil
+          QsKeys.pressed[keycode] = nil
+          hl.dispatch(hl.dsp.global("quickshell:keySound" .. (KEY_RELEASES[sound] or "Up")))
+        end, { timeout = TAP_MS, type = "oneshot" })
         return
       end
       pressed[keycode] = nil
+      QsKeys.pendingUp[keycode] = nil
       -- Events can arrive a millisecond out of order, hence math.abs.
       local chord = QsKeys.lastUp ~= nil and math.abs(time - QsKeys.lastUp) < CHORD_MS
       QsKeys.lastUp = time
@@ -525,9 +549,11 @@ function QsKeys.set(on)
       sound = KEY_RELEASES[sound] or "Up"
     else
       if pressed[keycode] == time then
+        QsKeys.pendingUp[keycode] = nil
         return
       end
       pressed[keycode] = time
+      QsKeys.pendingUp[keycode] = nil
       local chord = QsKeys.lastDown ~= nil and math.abs(time - QsKeys.lastDown) < CHORD_MS
       QsKeys.lastDown = time
       if chord then
