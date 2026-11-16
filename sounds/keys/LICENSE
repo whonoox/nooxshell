@@ -9,6 +9,10 @@ of gain:
     areverse,volume=10dB" -ac 1 -ar 48000 -c:a pcm_s16le down-generic-r0.wav
 
 press/X.mp3 became down-x.wav and release/X.mp3 became up-x.wav.
+Space and Backspace came out louder than the other keys, so they were
+then brought down to the same level, measured as the loudest 30 ms:
+down-space.wav by 6 dB, down-backspace.wav by 7.7 dB and up-space.wav by
+4.5 dB (ffmpeg -af volume=-6dB and so on).
 
 The exception is down-enter-gunshot.wav, the pistol shot Enter plays. It
 is "pistol shot" (audio file ID 233473) by mrfriends
@@ -17,11 +21,11 @@ https://pixabay.com/sound-effects/film-special-effects-pistol-shot-233473/
 downloaded 2026-11-15 under the Pixabay Content License
 (https://pixabay.com/service/terms/), not the MIT license below. It was
 trimmed of its leading silence, cut to 1.32 s with a 60 ms fade out, and
-lowered to peak at -13 dB:
+lowered to peak at -20 dB:
 
   ffmpeg -i pistol-shot-233473.mp3 -af "silenceremove=start_periods=1:\
     start_threshold=-50dB,afade=t=in:d=0.001,atrim=end=1.32,areverse,\
-    afade=t=in:d=0.06,areverse,volume=-16.5dB" -ac 1 -ar 48000 \
+    afade=t=in:d=0.06,areverse,volume=-23.5dB" -ac 1 -ar 48000 \
     -c:a pcm_s16le down-enter-gunshot.wav
 
 MIT License
