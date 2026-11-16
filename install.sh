@@ -545,6 +545,157 @@ deconflict_hypr() {
   ok "Deconflicted Hyprland bindings, layer rules and autostart"
 }
 
+# Newer apps tell Hyprland whether to blur behind their windows
+# (ext-background-effect), and ask for none unless something in them wants
+# it. Their windows then stay see-through but show the wallpaper sharp, with
+# no blur or grain, even with the shell's window opacity. Each setting below
+# makes one kind of app ask for the blur. They are written between markers,
+# like Omarchy's own Glassy blocks, so a reinstall replaces them and the
+# uninstaller takes them out. A file that already sets the value is left as
+# it is, and a change its app rejects is taken back.
+APP_BLUR_BEGIN="nooxshell blur begin"
+APP_BLUR_END="nooxshell blur end"
+
+# remove_blur_block FILE OPEN CLOSE: OPEN and CLOSE wrap the markers in the
+# file's comment syntax ("#" "" or "/*" " */").
+remove_blur_block() {
+  local file="$1" open="$2" close="$3" tmp
+  [[ -f $file ]] && grep -qxF -- "$open $APP_BLUR_BEGIN$close" "$file" || return 0
+  tmp="$(mktemp)"
+  awk -v b="$open $APP_BLUR_BEGIN$close" -v e="$open $APP_BLUR_END$close" '
+    $0 == b { skip = 1; next }
+    skip && $0 == e { skip = 0; next }
+    !skip { print }
+  ' "$file" >"$tmp"
+  # Rewritten in place to keep the file's permissions.
+  cat "$tmp" >"$file"
+  rm -f "$tmp"
+}
+
+# append_blur_block FILE OPEN CLOSE LINE...
+append_blur_block() {
+  local file="$1" open="$2" close="$3"
+  shift 3
+  # A file that does not end in a newline gets one, or the marker would
+  # join its last line.
+  if [[ -s $file && -n $(tail -c 1 "$file") ]]; then
+    printf '\n' >>"$file"
+  fi
+  printf '%s\n' "$open $APP_BLUR_BEGIN$close" "$@" "$open $APP_BLUR_END$close" >>"$file"
+}
+
+# prepend_blur_block FILE LINE...: for foot.ini, whose block has to come
+# before the theme include (see below).
+prepend_blur_block() {
+  local file="$1" tmp
+  shift
+  tmp="$(mktemp)"
+  {
+    printf '%s\n' "# $APP_BLUR_BEGIN" "$@"
+    # Keys at the top of the file before any section header belong to
+    # [main]; after the block they would land in its section instead.
+    if [[ $(grep -vE '^[[:space:]]*(#.*)?$' "$file" | head -1) != \[* ]]; then
+      printf '[main]\n'
+    fi
+    printf '%s\n' "# $APP_BLUR_END"
+    cat "$file"
+  } >"$tmp"
+  cat "$tmp" >"$file"
+  rm -f "$tmp"
+}
+
+enable_app_blur() {
+  local config="$HOME_DIR/.config"
+  local ghostty="$config/ghostty/config"
+  local foot="$config/foot/foot.ini"
+  local gtk="$config/gtk-4.0/gtk.css"
+
+  # GTK 4.24 is the first to ask for no blur, and older GTK does not know
+  # backdrop-filter and would warn about it in every app.
+  local gtk_version want_gtk=0
+  gtk_version="$(pacman -Q gtk4 2>/dev/null | awk '{ print $2 }')"
+  if [[ -n $gtk_version ]] && command -v vercmp >/dev/null 2>&1 &&
+    (( $(vercmp "$gtk_version" 4.24) >= 0 )); then
+    want_gtk=1
+  fi
+
+  if (( DRY_RUN )); then
+    command -v ghostty >/dev/null 2>&1 && [[ -f $ghostty ]] &&
+      printf '  would add background-blur to: %s\n' "$ghostty"
+    command -v foot >/dev/null 2>&1 && [[ -f $foot ]] &&
+      printf '  would add alpha=0.99 to: %s\n' "$foot"
+    (( want_gtk )) && printf '  would add a backdrop-filter to: %s\n' "$gtk"
+    return 0
+  fi
+
+  # Ghostty 1.4: background-blur makes it ask for the blur.
+  if command -v ghostty >/dev/null 2>&1 && [[ -f $ghostty ]]; then
+    backup_file "$ghostty"
+    remove_blur_block "$ghostty" "#" ""
+    if grep -qE '^[[:space:]]*background-blur[[:space:]]*=' "$ghostty"; then
+      info "Ghostty sets background-blur itself; left as it is"
+    else
+      local valid_before=0
+      timeout 10 ghostty +validate-config --config-file="$ghostty" >/dev/null 2>&1 && valid_before=1
+      append_blur_block "$ghostty" "#" "" \
+        "# Ask Hyprland to blur behind the window; without it Ghostty asks for" \
+        "# none and the wallpaper shows through sharp, with no blur or grain." \
+        "background-blur = true"
+      if (( valid_before )) && ! timeout 10 ghostty +validate-config --config-file="$ghostty" >/dev/null 2>&1; then
+        remove_blur_block "$ghostty" "#" ""
+        warn "This Ghostty does not take background-blur; its windows may show no blur"
+      else
+        ok "Ghostty asks for the window blur"
+      fi
+    fi
+  fi
+
+  # foot asks for the blur only while its background is see-through, so
+  # 0.99 is just enough. It goes at the top, before the theme include, so a
+  # theme or Omarchy's Glassy windows (alpha=0.65) still set their own.
+  if command -v foot >/dev/null 2>&1 && [[ -f $foot ]]; then
+    backup_file "$foot"
+    remove_blur_block "$foot" "#" ""
+    if grep -qE '^[[:space:]]*alpha[[:space:]]*=' "$foot"; then
+      info "foot sets its own alpha; left as it is"
+    else
+      local valid_before=0
+      foot --config="$foot" --check-config >/dev/null 2>&1 && valid_before=1
+      prepend_blur_block "$foot" \
+        "# Just short of opaque, so foot asks Hyprland to blur behind it." \
+        "[colors-dark]" \
+        "alpha=0.99"
+      if (( valid_before )) && ! foot --config="$foot" --check-config >/dev/null 2>&1; then
+        remove_blur_block "$foot" "#" ""
+        warn "This foot does not take [colors-dark] alpha; its windows may show no blur"
+      else
+        ok "foot asks for the window blur"
+      fi
+    fi
+  fi
+
+  # Every GTK 4 app (Files and the rest) reads the user's gtk.css. GTK asks
+  # for the blur only where a backdrop-filter covers the window; Hyprland
+  # draws its own blur, so the radius is not used.
+  if (( want_gtk )); then
+    backup_file "$gtk"
+    mkdir -p "$(dirname "$gtk")"
+    [[ -e $gtk ]] || : >"$gtk"
+    remove_blur_block "$gtk" "/*" " */"
+    if grep -qE '^[[:space:]]*window[[:space:]]*\{' "$gtk" && grep -qF 'backdrop-filter' "$gtk"; then
+      info "gtk.css already gives windows a backdrop-filter; left as it is"
+    else
+      append_blur_block "$gtk" "/*" " */" \
+        "/* Ask Hyprland to blur behind GTK 4 windows, which ask for none" \
+        "   unless a backdrop-filter covers them. */" \
+        "window {" \
+        "  backdrop-filter: blur(10px);" \
+        "}"
+      ok "GTK 4 apps ask for the window blur"
+    fi
+  fi
+}
+
 # Suppresses the stock Omarchy bar and popups by disabling the plugins our
 # shell replaces, and re-enables the ones an earlier version disabled but
 # this one relies on (the background plugin, which draws the wallpaper and
@@ -915,6 +1066,7 @@ main() {
   check_brand_font
   install_hypr
   deconflict_hypr
+  enable_app_blur
   configure_omarchy
   install_cli
   check_path_order

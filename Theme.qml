@@ -202,14 +202,31 @@ QtObject {
         root.workspaceHideFactor = isFinite(factor) && factor > 0
             ? Math.min(1, factor) : 1500 / 3500
 
+        // Pushed to Hyprland on every load, not only on a change: the file
+        // may have been edited while the shell was down, and Hyprland only
+        // rereads it on a reload. The Hyprland module reads the same values
+        // the same way (hypr/quickshell-islands.lua), so a reload agrees.
+        var decoration = []
+
+        // A missing or unreadable rounding keeps what the shell has.
         var r = parseInt(d.rounding, 10)
-        if (!isFinite(r) || r < 0) return
-        r = Math.min(r, root.unit)
-        root.rounding = r
-        // Pushed on every load, not only on a change: the file may have been
-        // edited while the shell was down, and Hyprland only rereads it on
-        // a reload.
-        Quickshell.execDetached(["hyprctl", "eval", "hl.config({ decoration = { rounding = " + r + " } })"])
+        if (isFinite(r) && r >= 0) {
+            r = Math.min(r, root.unit)
+            root.rounding = r
+            decoration.push("rounding = " + r)
+        }
+
+        // How see-through windows are, focused and not: 0.3-1, 1 for solid.
+        // Missing or unreadable is 0.87.
+        decoration.push("active_opacity = " + windowOpacity(d.active_opacity))
+        decoration.push("inactive_opacity = " + windowOpacity(d.inactive_opacity))
+
+        Quickshell.execDetached(["hyprctl", "eval", "hl.config({ decoration = { " + decoration.join(", ") + " } })"])
+    }
+
+    function windowOpacity(value) {
+        var o = parseFloat(value)
+        return isFinite(o) ? Math.min(1, Math.max(0.3, o)) : 0.87
     }
 
     property FileView configFile: FileView {

@@ -99,7 +99,7 @@ The system is constructed on top of several native Linux graphics and Wayland sp
 
 ### 2.4 Compositor-Level X-Ray Blur
 - Hyprland's compositor shader pipeline is harnessed via custom layer rules (`blur = true, xray = true, ignore_alpha = 0.005`).
-- Panels specify a hairline border (`borderWidth = 4`) rendered with near-zero opacity (`Qt.rgba(0, 0, 0, 0.01)`). Hyprland's dual-Kawase blur engine treats this as an X-Ray aperture, creating frosted glass borders without blurring the panel's interior.
+- Panels specify a hairline border (`Theme.borderWidth`, the `gaps` value from `config.toml`, 4 by default) rendered with near-zero opacity (`Qt.rgba(0, 0, 0, 0.01)`). Hyprland's dual-Kawase blur engine treats this as an X-Ray aperture, creating frosted glass borders without blurring the panel's interior.
 
 ---
 
@@ -168,7 +168,7 @@ To integrate cleanly with the host system without fighting existing Omarchy defa
    - Using `global` shortcuts eliminates intermediate shell spawns, routing keystrokes straight to Quickshell's event loop.
 4. **`looknfeel.lua`**:
    - Holds the user's own compositor preferences (decoration, opacity).
-   - Gaps, blur and `decoration:rounding` are owned by `quickshell-islands.lua`, which loads after it. The rounding is read from `~/.config/quickshell/config.toml`, so set it there, not here.
+   - Gaps, blur, `decoration:rounding` and the window opacity (`active_opacity`, `inactive_opacity`) are owned by `quickshell-islands.lua`, which loads after it. They are read from `~/.config/quickshell/config.toml`, so set them there, not here.
    - The X-Ray layer rule for the island panels now lives in `quickshell-islands.lua`:
       ```lua
       hl.layer_rule({

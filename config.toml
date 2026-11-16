@@ -10,6 +10,21 @@
 # values are treated as 20, the most the islands are laid out for.
 rounding = 16
 
+# Gap in pixels between a window and the screen edge, and between two
+# windows. The islands draw their border at the same width, so they keep
+# the same spacing as the windows. Range 2-12. Odd values round down to
+# the even number below (5 is 4), because two windows split the gap
+# between them and each side needs a whole pixel.
+gaps = 4
+
+# How see-through windows are, focused (active) and not (inactive), from
+# 0.3 to 1; 1 is solid. The see-through is what lets the blurred, grainy
+# wallpaper show behind every window, as it does behind the islands. Omarchy's
+# own per-app opacity (terminals, Glassy windows) multiplies on top. Set
+# these here rather than in looknfeel.lua, which the shell overrides.
+active_opacity = 0.87
+inactive_opacity = 0.87
+
 # The apps menu (Super + Alt + Space, or Apps in the main menu) as a grid
 # two apps to a line. false gives the single list every other menu uses.
 two_column_app_grid = true
