@@ -1734,7 +1734,9 @@ Scope {
                             width: root.gridMode ? resultGrid.cellWidth - root.rowSpacing : resultList.width
                             height: root.gridMode ? root.baseRowHeight : root.rowHeightForDetail(rowItem.detail)
                             radius: 6
-                            color: rowItem.hasCursor ? Theme.selection : "transparent"
+                            color: rowItem.hasCursor ? Theme.selectedFill : "transparent"
+                            border.color: Theme.selectedBorder
+                            border.width: rowItem.hasCursor ? Theme.selectedBorderWidth : 0
 
                             RowLayout {
                                 anchors.fill: parent

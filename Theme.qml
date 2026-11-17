@@ -50,6 +50,17 @@ QtObject {
     property color muted: isLight ? "#a0aec0" : "#2d3450"
     property color urgent: red
 
+    // The one selection state every island shares: whatever the keyboard
+    // cursor or the pointer is on sits on a plate of selectedFill edged in
+    // selectedBorder. A plain item (a row, a neutral button) takes the plate
+    // as its own fill and border. A control whose fill means something (a
+    // switch that is on, a Connect button) keeps that fill, and the plate
+    // shows as a halo around it instead; see SelectionHalo.qml.
+    readonly property color selectedFill: selection
+    readonly property color selectedBorder: darkForeground
+    readonly property real selectedBorderWidth: 1
+    readonly property real selectedHaloPad: spacing / 2
+
     // Dimensions
     //
     // borderWidth is gaps in config.toml: the same value is pushed to

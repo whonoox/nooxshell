@@ -101,9 +101,9 @@ Item {
                     width: 110
                     height: 32
                     radius: 6
-                    color: root.selectedIndex === 0 ? Theme.selection : "transparent"
-                    border.color: Theme.selection
-                    border.width: 1
+                    color: root.selectedIndex === 0 ? Theme.selectedFill : "transparent"
+                    border.color: root.selectedIndex === 0 ? Theme.selectedBorder : Theme.selection
+                    border.width: Theme.selectedBorderWidth
 
                     Text {
                         anchors.centerIn: parent
@@ -126,9 +126,9 @@ Item {
                     width: 110
                     height: 32
                     radius: 6
-                    color: root.selectedIndex === 1 ? Theme.selection : "transparent"
-                    border.color: Theme.selection
-                    border.width: 1
+                    color: root.selectedIndex === 1 ? Theme.selectedFill : "transparent"
+                    border.color: root.selectedIndex === 1 ? Theme.selectedBorder : Theme.selection
+                    border.width: Theme.selectedBorderWidth
 
                     Text {
                         anchors.centerIn: parent

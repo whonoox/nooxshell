@@ -69,6 +69,7 @@
     { "src": "ScoopShape.qml", "dest": "~/.config/quickshell/ScoopShape.qml" },
     { "src": "ScoopTestPanel.qml", "dest": "~/.config/quickshell/ScoopTestPanel.qml" },
     { "src": "ScoopV2.qml", "dest": "~/.config/quickshell/ScoopV2.qml" },
+    { "src": "SelectionHalo.qml", "dest": "~/.config/quickshell/SelectionHalo.qml" },
     { "src": "Theme.qml", "dest": "~/.config/quickshell/Theme.qml" },
     { "src": "GridPicker.qml", "dest": "~/.config/quickshell/GridPicker.qml" },
     { "src": "ThemePicker.qml", "dest": "~/.config/quickshell/ThemePicker.qml" },

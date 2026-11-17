@@ -792,15 +792,15 @@ Scope {
                                             width: btnText.implicitWidth + 14
                                             height: 22
                                             radius: 6
-                                            color: actionBtnMouse.containsMouse ? Theme.brand : Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 0.9)
-                                            border.width: 1
-                                            border.color: actionBtnMouse.containsMouse ? Theme.brand : Qt.rgba(Theme.muted.r, Theme.muted.g, Theme.muted.b, 0.6)
+                                            color: actionBtnMouse.containsMouse ? Theme.selectedFill : Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 0.9)
+                                            border.width: Theme.selectedBorderWidth
+                                            border.color: actionBtnMouse.containsMouse ? Theme.selectedBorder : Qt.rgba(Theme.muted.r, Theme.muted.g, Theme.muted.b, 0.6)
 
                                             Text {
                                                 id: btnText
                                                 anchors.centerIn: parent
                                                 text: actionBtn.modelData.text
-                                                color: actionBtnMouse.containsMouse ? Theme.darkerBackground : Theme.foreground
+                                                color: Theme.foreground
                                                 font.family: Theme.fontFamily
                                                 font.pixelSize: 11
                                                 font.bold: true
@@ -831,9 +831,9 @@ Scope {
                             anchors.top: parent.top
                             anchors.topMargin: Theme.spacing * 1.5 - 2
                             radius: 5
-                            color: closeMouse.containsMouse
-                                ? Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 0.9)
-                                : "transparent"
+                            color: closeMouse.containsMouse ? Theme.selectedFill : "transparent"
+                            border.color: Theme.selectedBorder
+                            border.width: closeMouse.containsMouse ? Theme.selectedBorderWidth : 0
 
                             Repeater {
                                 model: [45, -45]
