@@ -16,6 +16,15 @@ Scope {
     property bool hudVisible: false
     property bool isExpanded: false
     readonly property bool hideAll: !hudVisible && !isExpanded
+    // Closing from the panel shrinks the card back to its glance size first
+    // and only then slides it off, the way the time island closes. Sliding on
+    // hideAll alone raced the 250ms collapse: the card shot up while still
+    // tall and read as a jump.
+    readonly property bool cardHidden: hideAll && !collapseSettle.running
+    Timer {
+        id: collapseSettle
+        interval: 250
+    }
     property real lastToggleTime: 0
     property bool focusPrimed: false
 
@@ -415,6 +424,7 @@ Scope {
             wifiActionFocused = false
             root.rescanWifi()
         } else {
+            collapseSettle.restart()
             focusPrimeTimer.stop()
             focusPrimed = false
             root.stopStatus()
@@ -1084,7 +1094,7 @@ Scope {
                 Item {
                     id: cardContainer
                     anchors.right: parent.right
-                    y: root.hideAll ? -(height + 30) : 0
+                    y: root.cardHidden ? -(height + 30) : 0
 
                     width: root.isExpanded ? 390 + Theme.borderWidth : wifiName.implicitWidth + Theme.unit * 2 + Theme.rounding + Theme.borderWidth
                     height: root.isExpanded ? Math.min(520, summaryHeader.height + detailsColumn.implicitHeight + Theme.rounding + Theme.spacing * 2) + Theme.borderWidth : Theme.topIslandHeight + Theme.rounding

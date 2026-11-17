@@ -411,7 +411,9 @@ Scope {
             PopoutCoordinator.claim("audio")
             autoHide.stop()
         } else {
-            root.pinnedScreen = null
+            // Closing collapses the island before it slides off, so it stays
+            // on its screen until it is gone; slideAnim unpins it then.
+            if (!root.hideBar) root.pinnedScreen = null
             PopoutCoordinator.release("audio")
             root.devices = root.ordered(root.devices)
         }
@@ -745,11 +747,25 @@ Scope {
                     onFinished: {
                         if (root.hideBar) {
                             panelWindow.visible = false
-                            // Collapse once off-screen, so the island slides
-                            // out at the width it was shown at.
-                            root.isExpanded = false
+                            root.pinnedScreen = null
                         }
                     }
+                }
+
+                // Closing while expanded shrinks the island back to one column
+                // first and slides it off once the 250ms resize has settled,
+                // the way the time island closes.
+                Timer {
+                    id: slideOutDelay
+                    interval: 250
+                    onTriggered: pillContainer.slideOut()
+                }
+
+                function slideOut() {
+                    slideAnim.stop()
+                    slideAnim.from = pillContainer.x
+                    slideAnim.to = -(pillContainer.width + 10)
+                    slideAnim.start()
                 }
 
                 Connections {
@@ -757,15 +773,17 @@ Scope {
                     function onHideBarChanged() {
                         if (!root.hideBar) {
                             panelWindow.visible = true
+                            slideOutDelay.stop()
                             slideAnim.stop()
                             slideAnim.from = pillContainer.x
                             slideAnim.to = 0
                             slideAnim.start()
-                        } else {
+                        } else if (root.isExpanded) {
                             slideAnim.stop()
-                            slideAnim.from = pillContainer.x
-                            slideAnim.to = -(pillContainer.width + 10)
-                            slideAnim.start()
+                            root.isExpanded = false
+                            slideOutDelay.restart()
+                        } else {
+                            pillContainer.slideOut()
                         }
                     }
                 }
