@@ -1,6 +1,6 @@
 {
   "name": "nooxshell",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Floating island desktop shell for Omarchy, built on Quickshell.",
 
   "shell": {
