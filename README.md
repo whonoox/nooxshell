@@ -108,7 +108,7 @@ line, restores `shell.json`, and brings the stock Omarchy shell back up.
 | `Super+Shift+Ctrl+Space` | Theme picker |
 | Volume / Brightness keys | Island HUDs |
 | `Super+Shift+Arrows` | Swap the active window, or move the picked tile group |
-| `Super+Alt+T` | Key sounds on or off |
+| `Super+Alt+K` | Key sounds on or off |
 
 ## Tile groups
 
@@ -131,7 +131,7 @@ workspace on top, or a tabbed window group.
 
 ## Key sounds
 
-`Super+Alt+T`, or the keyboard button in the toggle island, plays a
+`Super+Alt+K`, or the keyboard button in the toggle island, plays a
 mechanical switch sound on every key press and release, with its own sound
 for Space and Backspace, a pistol shot for Enter and for `Super+W`, which
 closes the window (with the usual click when the key comes back up), and a

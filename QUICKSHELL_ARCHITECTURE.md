@@ -400,7 +400,7 @@ The following diagram illustrates the screen positions of each component in this
 | [`ThemePicker.qml`](file:///ThemePicker.qml) | Center Modal | `SUPER + SHIFT + CTRL + SPACE` |
 | [`CursorXRay.qml`](file:///CursorXRay.qml) | Dynamic Follower | `SUPER + ALT + C` or IPC (`cursorXRay toggle`) |
 | [`TileGroups.qml`](file:///TileGroups.qml) | Window Splits | Dots on tiled workspaces with three or more windows; hover, click or drag, `SUPER + SHIFT + arrows` |
-| [`KeySounds.qml`](file:///KeySounds.qml) | No Surface | `SUPER + ALT + T`, the toggle island, or IPC (`toggleBar toggleKeySounds`) |
+| [`KeySounds.qml`](file:///KeySounds.qml) | No Surface | `SUPER + ALT + K`, the toggle island, or IPC (`toggleBar toggleKeySounds`) |
 | [`RoundedOverlay.qml`](file:///RoundedOverlay.qml) | All Corners | Persistent inward bezel rounding across all connected monitors |
 
 ### 6.6 Bluetooth Bar Keys

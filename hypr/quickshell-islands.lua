@@ -56,7 +56,7 @@ M.bindings = {
   { key = "SUPER + ALT + C", desc = "Cursor X-Ray toggle", dispatch = "quickshell:cursorXRayToggle" },
   { key = "SUPER + ALT + I", desc = "Stay awake toggle", dispatch = "quickshell:stayAwakeToggle" },
   { key = "SUPER + ALT + L", desc = "Night light toggle", dispatch = "quickshell:nightLightToggle" },
-  { key = "SUPER + ALT + T", desc = "Key sounds toggle", dispatch = "quickshell:keySoundsToggle" },
+  { key = "SUPER + ALT + K", desc = "Key sounds toggle", dispatch = "quickshell:keySoundsToggle" },
   { key = "XF86RFKill", desc = "Airplane mode toggle", dispatch = "quickshell:airplaneToggle" },
 }
 
