@@ -855,6 +855,18 @@ write_state() {
     ref="$(git -C "$REPO_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || printf '%s' "$REPO_REF")"
   fi
 
+  # The exact revision, so `nooxshell version` can tell two installs of the
+  # same nightly version apart. A local checkout installed with uncommitted
+  # edits is marked as such, since it matches no published commit.
+  local commit=""
+  if commit="$(git -C "$REPO_DIR" rev-parse --short HEAD 2>/dev/null)"; then
+    if [[ -n $(git -C "$REPO_DIR" status --porcelain 2>/dev/null) ]]; then
+      commit="$commit-dirty"
+    fi
+  else
+    commit=""
+  fi
+
   jq -n \
     --arg name "$(manifest_get '.name')" \
     --arg version "$(manifest_get '.version')" \
@@ -862,6 +874,7 @@ write_state() {
     --arg repo "$REPO_DIR" \
     --arg repo_url "$REPO_URL" \
     --arg ref "$ref" \
+    --arg commit "$commit" \
     --arg config "$CONFIG_DIR" \
     --arg hypr_module "$(expand_path "$(manifest_get '.hypr.module.dest')")" \
     --arg hypr_require "$(expand_path "$(manifest_get '.hypr.require.file')")" \
@@ -873,6 +886,7 @@ write_state() {
        repo: $repo,
        repo_url: $repo_url,
        ref: $ref,
+       commit: $commit,
        config: $config,
        hypr_module: $hypr_module,
        hypr_require: $hypr_require,

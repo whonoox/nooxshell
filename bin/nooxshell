@@ -91,6 +91,7 @@ Commands:
   ping                 Check that the shell answers over IPC
   update               Pull the newest revision and restart the shell
   uninstall            Remove the shell and restore the stock desktop
+  version              Show the installed version (also --version, -V)
   help                 Show this help
 
 Modules: menu, wifi, bluetooth, time, audio, battery, brightness,
@@ -337,6 +338,7 @@ cmd_status() {
   pid="$(instance_pid)"
 
   echo "config:  $QS_PATH/shell.qml"
+  echo "version:  $(installed_version || echo unknown)"
   if [[ -n $pid ]]; then
     echo "instance: running (pid $pid)"
   else
@@ -608,6 +610,26 @@ cmd_update() {
   cmd_restart
 }
 
+# The installed version as the installer recorded it, with the branch and
+# commit it came from: "1.1.0-nightly.1 (nightly, 467d1bc)". Installs from
+# before the commit was recorded show what they have.
+installed_version() {
+  local version ref commit detail
+  version="$(recorded_state version)"
+  [[ -n $version ]] || return 1
+  ref="$(recorded_state ref)"
+  commit="$(recorded_state commit)"
+  detail="${ref}${ref:+${commit:+, }}${commit}"
+  printf '%s%s' "$version" "${detail:+ ($detail)}"
+}
+
+cmd_version() {
+  local version
+  version="$(installed_version)" ||
+    fail "no version recorded; re-run the installer to record it"
+  echo "nooxshell $version"
+}
+
 cmd_uninstall() {
   local repo
   repo="$(installer_repo)" || {
@@ -639,6 +661,7 @@ main() {
     ping) cmd_ping "$@" ;;
     update) cmd_update "$@" ;;
     uninstall) cmd_uninstall "$@" ;;
+    version | -V | --version) cmd_version "$@" ;;
     help | -h | --help) usage ;;
     *)
       echo "nooxshell: unknown command '$command'" >&2

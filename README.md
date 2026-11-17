@@ -150,6 +150,7 @@ restarts.
 ## Managing the shell
 
 ```bash
+nooxshell --version     # installed version, branch and commit
 nooxshell status        # instance, IPC health, available targets
 nooxshell doctor        # check for stray instances and theme problems
 nooxshell restart
