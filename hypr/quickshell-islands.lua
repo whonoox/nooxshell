@@ -26,9 +26,23 @@ local M = {}
 -- The shell's global shortcuts are registered by the Quickshell instance and
 -- dispatched straight into its event loop, so a keypress never spawns a
 -- process. Unbinding first drops the Omarchy default for that combination.
+--
+-- Every key Omarchy binds to a menu route is listed, not only Super+Space.
+-- From 4.5 Omarchy dispatches them to its own menu plugin, which the
+-- installer disables, so a key left out here opens the stock menu until the
+-- Omarchy shell restarts, then nothing at all. On 4.0.x they ran
+-- omarchy-menu, which the shim already routes here.
 M.bindings = {
   { key = "SUPER + SPACE", desc = "Omarchy menu", dispatch = "quickshell:menuToggle" },
+  { key = "SUPER + SHIFT + code:201", desc = "Omarchy menu", dispatch = "quickshell:menuToggle" },
   { key = "SUPER + ALT + SPACE", desc = "Apps menu", dispatch = "quickshell:appsToggle" },
+  { key = "SUPER + ESCAPE", desc = "System menu", dispatch = "quickshell:systemToggle" },
+  { key = "XF86PowerOff", desc = "Power menu", dispatch = "quickshell:systemToggle", opts = { locked = true } },
+  { key = "SUPER + CTRL + C", desc = "Capture menu", dispatch = "quickshell:captureToggle" },
+  { key = "SUPER + CTRL + O", desc = "Toggle menu", dispatch = "quickshell:togglesToggle" },
+  { key = "SUPER + CTRL + H", desc = "Hardware menu", dispatch = "quickshell:hardwareToggle" },
+  { key = "SUPER + CTRL + S", desc = "Share", dispatch = "quickshell:shareToggle" },
+  { key = "SUPER + CTRL + R", desc = "Set reminder", dispatch = "quickshell:reminderSetToggle" },
   { key = "SUPER + CTRL + W", desc = "Wifi HUD and Panel", dispatch = "quickshell:wifiToggle" },
   { key = "SUPER + CTRL + B", desc = "Bluetooth HUD and Panel", dispatch = "quickshell:bluetoothToggle" },
   { key = "SUPER + CTRL + T", desc = "Time HUD and Panel", dispatch = "quickshell:timeToggle" },
@@ -199,7 +213,7 @@ function M.apply()
 
   for _, binding in ipairs(M.bindings) do
     hl.unbind(binding.key)
-    o.bind(binding.key, binding.desc, hl.dsp.global(binding.dispatch))
+    o.bind(binding.key, binding.desc, hl.dsp.global(binding.dispatch), binding.opts)
   end
 
   for _, binding in ipairs(M.hardware_bindings) do

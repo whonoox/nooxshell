@@ -1306,6 +1306,44 @@ Scope {
         onPressed: root.toggle("system")
     }
 
+    // The other submenus Omarchy gives a key of their own. Its bindings
+    // dispatch them to its menu plugin, which the installer turns off, so
+    // quickshell-islands.lua points those keys here instead.
+    GlobalShortcut {
+        name: "captureToggle"
+        description: "Toggle the Omarchy menu directly into Capture"
+        appid: "quickshell"
+        onPressed: root.toggle("capture")
+    }
+
+    GlobalShortcut {
+        name: "togglesToggle"
+        description: "Toggle the Omarchy menu directly into Toggle"
+        appid: "quickshell"
+        onPressed: root.toggle("toggle")
+    }
+
+    GlobalShortcut {
+        name: "hardwareToggle"
+        description: "Toggle the Omarchy menu directly into Hardware"
+        appid: "quickshell"
+        onPressed: root.toggle("hardware")
+    }
+
+    GlobalShortcut {
+        name: "shareToggle"
+        description: "Toggle the Omarchy menu directly into Share"
+        appid: "quickshell"
+        onPressed: root.toggle("share")
+    }
+
+    GlobalShortcut {
+        name: "reminderSetToggle"
+        description: "Set a reminder from the Omarchy menu"
+        appid: "quickshell"
+        onPressed: root.toggle("reminder-set")
+    }
+
     GlobalShortcut {
         name: "menuRefresh"
         description: "Re-parse the Omarchy menu JSONC files"

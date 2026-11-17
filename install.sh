@@ -1166,6 +1166,7 @@ main() {
 Shortcuts
   Super+Space         Omarchy menu
   Super+Alt+Space     Apps menu
+  Super+Esc           System menu
   Super+Ctrl+W        Wifi
   Super+Ctrl+B        Bluetooth
   Super+Ctrl+T        Time
