@@ -85,6 +85,8 @@ line, restores `shell.json`, and brings the stock Omarchy shell back up.
 | :--- | :--- |
 | `Super+Space` | Omarchy menu |
 | `Super+Alt+Space` | Apps menu |
+| `Super+Esc` / power key | System menu |
+| `Super+Ctrl+C` / `O` / `H` / `S` / `R` | Capture, Toggle, Hardware, Share and Set reminder menus |
 | `Super+Ctrl+W` | Wi-Fi |
 | `Super+Ctrl+B` | Bluetooth |
 | `Super+Ctrl+T` | Time |

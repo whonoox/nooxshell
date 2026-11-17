@@ -153,6 +153,9 @@ To integrate cleanly with the host system without fighting existing Omarchy defa
    - Maps physical keybindings to Quickshell's internal `GlobalShortcut` handlers using Hyprland's `hl.dsp.global(...)` dispatcher:
       - `SUPER + SPACE`: `quickshell:menuToggle`
       - `SUPER + ALT + SPACE`: `quickshell:appsToggle`
+      - `SUPER + ESCAPE`, `XF86PowerOff`: `quickshell:systemToggle`
+      - `SUPER + CTRL + C` / `O` / `H` / `S` / `R`: `quickshell:captureToggle` / `togglesToggle` / `hardwareToggle` / `shareToggle` / `reminderSetToggle`
+      - Every key Omarchy binds to a menu route is taken over, not just `SUPER + SPACE`: from 4.5 Omarchy dispatches them to its `omarchy.menu` plugin, which the installer disables, so a key left out would open nothing.
       - `SUPER + CTRL + W`: `quickshell:wifiToggle`
       - `SUPER + CTRL + B`: `quickshell:bluetoothToggle`
       - `SUPER + CTRL + T`: `quickshell:timeToggle`
