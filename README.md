@@ -33,7 +33,7 @@ bash <(curl -fsSL https://github.com/whonoox/quickshell/raw/master/install.sh)
 To install or update to a specific release, name its tag:
 
 ```bash
-NOOXSHELL_REPO_REF=v1.0.2 bash <(curl -fsSL https://github.com/whonoox/quickshell/raw/v1.0.2/install.sh)
+NOOXSHELL_REPO_REF=v1.0.3 bash <(curl -fsSL https://github.com/whonoox/quickshell/raw/v1.0.3/install.sh)
 ```
 
 Options:
