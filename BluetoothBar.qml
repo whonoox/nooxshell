@@ -716,7 +716,10 @@ Scope {
                         if (root.focusSection === "header") {
                             root.headerIndex = Math.min(1, root.headerIndex + 1)
                         } else if (root.focusSection === "devices") {
-                            root.deviceActionFocused = true
+                            // Only a paired device has a button to move to:
+                            // the forget one. Connecting is the row itself.
+                            var target = root.flattenedDevices[root.selectedDeviceIndex]
+                            if (target && target.section === "known") root.deviceActionFocused = true
                         }
                         event.accepted = true
                         return
@@ -966,9 +969,16 @@ Scope {
                                     width: 26
                                     height: 26
                                     radius: 6
-                                    color: (root.adapter && root.adapter.discovering) ? Qt.rgba(Theme.cyan.r, Theme.cyan.g, Theme.cyan.b, 0.25) : Theme.surface
-                                    border.color: root.focusSection === "header" && root.headerIndex === 0 ? Theme.accent : (root.adapter && root.adapter.discovering ? Theme.cyan : Theme.selection)
-                                    border.width: root.focusSection === "header" && root.headerIndex === 0 ? 1.5 : 1
+                                    readonly property bool isDiscovering: !!(root.adapter && root.adapter.discovering)
+                                    readonly property bool isSelected: root.focusSection === "header" && root.headerIndex === 0
+                                    color: isDiscovering ? Qt.rgba(Theme.cyan.r, Theme.cyan.g, Theme.cyan.b, 0.25) : (isSelected ? Theme.selectedFill : "transparent")
+                                    border.color: isDiscovering ? Theme.cyan : (isSelected ? Theme.selectedBorder : Theme.selection)
+                                    border.width: 1
+
+                                    // Scanning tints the button, so the selection shows around it.
+                                    SelectionHalo {
+                                        active: parent.isDiscovering && parent.isSelected
+                                    }
                                     visible: root.adapter && root.adapter.enabled
 
                                     Text {
@@ -994,8 +1004,12 @@ Scope {
                                     height: 22
                                     radius: 11
                                     color: (root.adapter && root.adapter.enabled) ? Theme.brand : Theme.selection
-                                    border.color: root.focusSection === "header" && root.headerIndex === 1 ? Theme.foreground : ((root.adapter && root.adapter.enabled) ? Theme.brand : Theme.darkForeground)
-                                    border.width: root.focusSection === "header" && root.headerIndex === 1 ? 1.5 : 1
+                                    border.color: (root.adapter && root.adapter.enabled) ? Theme.brand : Theme.darkForeground
+                                    border.width: 1
+
+                                    SelectionHalo {
+                                        active: root.focusSection === "header" && root.headerIndex === 1
+                                    }
 
                                     Rectangle {
                                         width: 16
@@ -1080,7 +1094,12 @@ Scope {
                                     width: deviceList.width
                                     height: 32
                                     radius: 6
-                                    color: (isSelected && !root.deviceActionFocused) ? Theme.selection : (dev.connected ? Theme.selection : Theme.surface)
+                                    // No fill at rest, like the menu's rows: only the
+                                    // selected row sits on the selection plate. A
+                                    // connected device is told by its green icon and name.
+                                    color: (isSelected && !root.deviceActionFocused) ? Theme.selectedFill : "transparent"
+                                    border.color: Theme.selectedBorder
+                                    border.width: (isSelected && !root.deviceActionFocused) ? Theme.selectedBorderWidth : 0
 
                                     RowLayout {
                                         anchors.fill: parent
@@ -1147,10 +1166,11 @@ Scope {
                                             width: 20
                                             height: 20
                                             radius: 4
-                                            color: "transparent"
                                             visible: modelData.section === "known"
-                                            border.color: isSelected && root.deviceActionFocused ? Theme.red : Theme.selection
-                                            border.width: isSelected && root.deviceActionFocused ? 1.5 : 1
+                                            // The icon still turns red: forgetting is destructive.
+                                            color: isSelected && root.deviceActionFocused ? Theme.selectedFill : "transparent"
+                                            border.color: isSelected && root.deviceActionFocused ? Theme.selectedBorder : Theme.selection
+                                            border.width: Theme.selectedBorderWidth
 
                                             Text {
                                                 anchors.centerIn: parent
@@ -1166,39 +1186,6 @@ Scope {
                                                 hoverEnabled: true
                                                 onEntered: { root.focusSection = "devices"; root.selectedDeviceIndex = index; root.deviceActionFocused = true }
                                                 onClicked: root.forgetDevice(dev)
-                                            }
-                                        }
-
-                                        // Connect / Disconnect Action Button
-                                        Rectangle {
-                                            width: 60
-                                            height: 20
-                                            radius: 4
-                                            color: dev.connected ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.25) : Theme.brand
-                                            border.color: isSelected && root.deviceActionFocused && modelData.section !== "known" ? Theme.foreground : (dev.connected ? Theme.red : Theme.brand)
-                                            border.width: isSelected && root.deviceActionFocused && modelData.section !== "known" ? 1.5 : 1
-
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: dev.connected ? "Disconnect" : (modelData.section === "known" ? "Connect" : "Pair")
-                                                color: dev.connected ? Theme.red : Theme.darkBackground
-                                                font.family: Theme.fontFamily
-                                                font.pixelSize: 9
-                                                font.bold: true
-                                            }
-
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                cursorShape: Qt.PointingHandCursor
-                                                hoverEnabled: true
-                                                onEntered: { root.focusSection = "devices"; root.selectedDeviceIndex = index; root.deviceActionFocused = true }
-                                                onClicked: {
-                                                    if (dev.connected) {
-                                                        root.disconnectDevice(dev)
-                                                    } else {
-                                                        root.connectDevice(dev)
-                                                    }
-                                                }
                                             }
                                         }
                                     }
