@@ -2,6 +2,7 @@ import Quickshell
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Effects
 import QtQml.Models
 import Quickshell.Networking
 import Quickshell.Hyprland
@@ -1673,16 +1674,33 @@ Scope {
                                                         }
                                                     }
 
-                                                    Text {
+                                                    // Phosphor lock (bold weight), tinted like
+                                                    // the toggle icons.
+                                                    Item {
                                                         id: lockIcon
-                                                        text: Model.isProtected(delegateRoot.modelData.security, WifiSecurityType.Open) ? "󰌾" : ""
-                                                        color: Theme.yellow
-                                                        font.family: Theme.fontFamily
-                                                        font.pixelSize: 10
-                                                        visible: text !== ""
+                                                        width: 12
+                                                        height: 12
+                                                        visible: Model.isProtected(delegateRoot.modelData.security, WifiSecurityType.Open)
                                                         anchors.right: transitText.left
                                                         anchors.rightMargin: transitText.visible ? 6 : 0
                                                         anchors.verticalCenter: parent.verticalCenter
+
+                                                        Image {
+                                                            id: lockRaw
+                                                            anchors.fill: parent
+                                                            source: "decorations/lock.svg"
+                                                            sourceSize.width: 48
+                                                            sourceSize.height: 48
+                                                            fillMode: Image.PreserveAspectFit
+                                                            visible: false
+                                                        }
+
+                                                        MultiEffect {
+                                                            anchors.fill: lockRaw
+                                                            source: lockRaw
+                                                            colorization: 1.0
+                                                            colorizationColor: Theme.yellow
+                                                        }
                                                     }
 
                                                     Text {

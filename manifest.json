@@ -112,6 +112,7 @@
     { "src": "decorations/gauge.svg", "dest": "~/.config/quickshell/decorations/gauge.svg" },
     { "src": "decorations/keyboard.svg", "dest": "~/.config/quickshell/decorations/keyboard.svg" },
     { "src": "decorations/lightning-fill-red.svg", "dest": "~/.config/quickshell/decorations/lightning-fill-red.svg" },
+    { "src": "decorations/lock.svg", "dest": "~/.config/quickshell/decorations/lock.svg" },
     { "src": "decorations/lightning-fill.svg", "dest": "~/.config/quickshell/decorations/lightning-fill.svg" },
     { "src": "decorations/microphone-fill.svg", "dest": "~/.config/quickshell/decorations/microphone-fill.svg" },
     { "src": "decorations/microphone-slash-fill.svg", "dest": "~/.config/quickshell/decorations/microphone-slash-fill.svg" },
