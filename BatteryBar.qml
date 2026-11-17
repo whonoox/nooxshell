@@ -25,10 +25,15 @@ Scope{
     // on the charger can sit at a few percent as "not charging", "pending
     // charge" or even "fully charged", so the charge state alone cannot
     // tell a draining battery from one that is just plugged in.
-    readonly property bool onBattery: hasBattery && UPower.onBattery
+    //
+    // Not named onBattery: QML takes a name of "on" and a capital for a
+    // signal handler, and such a property keeps its first value (false, as
+    // the battery is not ready yet) for good, so the bolt never left and
+    // the bar was never pinned on a critical battery.
+    readonly property bool runningOnBattery: hasBattery && UPower.onBattery
     // Only a draining battery is critical: a low reading on the mains is not
     // going to run out, and pinning the bar for it would never let go.
-    readonly property bool criticalBattery: onBattery && battery.percentage <= 0.20
+    readonly property bool criticalBattery: runningOnBattery && battery.percentage <= 0.20
     readonly property bool lowBattery: battery.percentage <= 0.25
     readonly property bool mediumBattery: battery.percentage <= 0.50
     readonly property bool highBattery: battery.percentage <= 0.75
@@ -265,7 +270,7 @@ Scope{
                     anchors.horizontalCenter: batteryFlex.horizontalCenter
                     // On the mains, charging or not, so a battery that never
                     // charges past a few percent still shows it is plugged in.
-                    visible: root.hasBattery && !root.onBattery
+                    visible: root.hasBattery && !root.runningOnBattery
                     source: root.criticalBattery ? "decorations/lightning-fill-red.svg" : "decorations/lightning-fill.svg"
                     width: 14
                     height: 14
