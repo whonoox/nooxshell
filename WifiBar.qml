@@ -1030,8 +1030,6 @@ Scope {
                             root.headerIndex = Math.min(2, root.headerIndex + 1)
                         } else if (root.focusSection === "dns") {
                             root.dnsIndex = Math.min(2, root.dnsIndex + 1)
-                        } else if (root.focusSection === "wifi") {
-                            root.wifiActionFocused = true
                         }
                         event.accepted = true
                         return
@@ -1325,9 +1323,10 @@ Scope {
                                     width: 26
                                     height: 26
                                     radius: 6
-                                    color: Theme.surface
-                                    border.color: root.focusSection === "header" && root.headerIndex === 0 ? Theme.accent : Theme.selection
-                                    border.width: root.focusSection === "header" && root.headerIndex === 0 ? 1.5 : 1
+                                    readonly property bool isSelected: root.focusSection === "header" && root.headerIndex === 0
+                                    color: isSelected ? Theme.selectedFill : "transparent"
+                                    border.color: isSelected ? Theme.selectedBorder : Theme.selection
+                                    border.width: Theme.selectedBorderWidth
                                     visible: root.hasConnection
 
                                     Image {
@@ -1353,9 +1352,10 @@ Scope {
                                     width: 26
                                     height: 26
                                     radius: 6
-                                    color: Theme.surface
-                                    border.color: root.focusSection === "header" && root.headerIndex === 1 ? Theme.accent : Theme.selection
-                                    border.width: root.focusSection === "header" && root.headerIndex === 1 ? 1.5 : 1
+                                    readonly property bool isSelected: root.focusSection === "header" && root.headerIndex === 1
+                                    color: isSelected ? Theme.selectedFill : "transparent"
+                                    border.color: isSelected ? Theme.selectedBorder : Theme.selection
+                                    border.width: Theme.selectedBorderWidth
 
                                     Image {
                                         anchors.centerIn: parent
@@ -1381,8 +1381,12 @@ Scope {
                                     height: 22
                                     radius: 11
                                     color: Networking.wifiEnabled ? Theme.brand : Theme.selection
-                                    border.color: root.focusSection === "header" && root.headerIndex === 2 ? Theme.foreground : (Networking.wifiEnabled ? Theme.brand : Theme.darkForeground)
-                                    border.width: root.focusSection === "header" && root.headerIndex === 2 ? 1.5 : 1
+                                    border.color: Networking.wifiEnabled ? Theme.brand : Theme.darkForeground
+                                    border.width: 1
+
+                                    SelectionHalo {
+                                        active: root.focusSection === "header" && root.headerIndex === 2
+                                    }
 
                                     Rectangle {
                                         width: 16
@@ -1452,9 +1456,15 @@ Scope {
                                         Layout.fillWidth: true
                                         height: 22
                                         radius: 4
-                                        color: root.activeDns === modelData ? Theme.brand : Theme.surface
-                                        border.color: root.focusSection === "dns" && root.dnsIndex === index ? Theme.foreground : (root.activeDns === modelData ? Theme.brand : Theme.selection)
-                                        border.width: root.focusSection === "dns" && root.dnsIndex === index ? 1.5 : 1
+                                        readonly property bool isActive: root.activeDns === modelData
+                                        readonly property bool isSelected: root.focusSection === "dns" && root.dnsIndex === index
+                                        color: isActive ? Theme.brand : (isSelected ? Theme.selectedFill : "transparent")
+                                        border.color: isActive ? Theme.brand : (isSelected ? Theme.selectedBorder : Theme.selection)
+                                        border.width: 1
+
+                                        SelectionHalo {
+                                            active: parent.isActive && parent.isSelected
+                                        }
 
                                         Text {
                                             anchors.centerIn: parent
@@ -1611,7 +1621,13 @@ Scope {
                                             width: parent.width
                                             height: passwordBox.visible ? 60 : 30
                                             radius: 6
-                                            color: (root.focusSection === "wifi" && root.selectedWifiIndex === delegateRoot.index && !root.wifiActionFocused) ? Theme.selection : (delegateRoot.modelData.connected ? Theme.selection : Theme.surface)
+                                            readonly property bool isSelected: root.focusSection === "wifi" && root.selectedWifiIndex === delegateRoot.index && !root.wifiActionFocused
+                                            // No fill at rest, like the menu's rows: only the
+                                            // selected row sits on the selection plate. The
+                                            // connected network is told by its green icon and name.
+                                            color: isSelected ? Theme.selectedFill : "transparent"
+                                            border.color: Theme.selectedBorder
+                                            border.width: isSelected ? Theme.selectedBorderWidth : 0
 
                                             ColumnLayout {
                                                 anchors.fill: parent
@@ -1632,75 +1648,28 @@ Scope {
                                                         anchors.verticalCenter: parent.verticalCenter
                                                     }
 
-                                                    // Connect / Disconnect Action Button
-                                                    Rectangle {
-                                                        id: actionBtn
-                                                        width: delegateRoot.isItemConnecting ? (delegateRoot.modelData.known ? 76 : 64) : (delegateRoot.isItemDisconnecting ? 82 : (delegateRoot.modelData.connected ? 64 : 56))
-                                                        height: 20
-                                                        radius: 4
+                                                    // No Connect / Join / Disconnect button: clicking the row
+                                                    // (or Enter on it) does that. While it is in flight the
+                                                    // row says so in plain text, pulsing.
+                                                    Text {
+                                                        id: transitText
+                                                        visible: delegateRoot.isItemConnecting || delegateRoot.isItemDisconnecting
+                                                        width: visible ? implicitWidth : 0
                                                         anchors.right: parent.right
                                                         anchors.verticalCenter: parent.verticalCenter
-                                                        color: delegateRoot.isItemConnecting
-                                                            ? Qt.rgba(Theme.yellow.r, Theme.yellow.g, Theme.yellow.b, 0.25)
-                                                            : (delegateRoot.isItemDisconnecting
-                                                                ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.25)
-                                                                : (delegateRoot.modelData.connected
-                                                                    ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.25)
-                                                                    : Theme.brand))
-                                                        border.color: root.focusSection === "wifi" && root.selectedWifiIndex === delegateRoot.index && root.wifiActionFocused
-                                                            ? Theme.foreground
-                                                            : (delegateRoot.isItemConnecting
-                                                                ? Theme.yellow
-                                                                : (delegateRoot.isItemDisconnecting || delegateRoot.modelData.connected
-                                                                    ? Theme.red
-                                                                    : Theme.brand))
-                                                        border.width: root.focusSection === "wifi" && root.selectedWifiIndex === delegateRoot.index && root.wifiActionFocused ? 1.5 : 1
-
-                                                        Behavior on width {
-                                                            NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
-                                                        }
+                                                        text: delegateRoot.isItemConnecting
+                                                            ? (delegateRoot.modelData.known ? "Connecting" : "Joining")
+                                                            : "Disconnecting"
+                                                        color: delegateRoot.isItemConnecting ? Theme.yellow : Theme.red
+                                                        font.family: Theme.fontFamily
+                                                        font.pixelSize: 9
+                                                        font.bold: true
 
                                                         SequentialAnimation on opacity {
-                                                            running: delegateRoot.isItemConnecting || delegateRoot.isItemDisconnecting
+                                                            running: transitText.visible
                                                             loops: Animation.Infinite
                                                             NumberAnimation { from: 1.0; to: 0.35; duration: 450; easing.type: Easing.InOutQuad }
                                                             NumberAnimation { from: 0.35; to: 1.0; duration: 450; easing.type: Easing.InOutQuad }
-                                                        }
-
-                                                        Text {
-                                                            anchors.centerIn: parent
-                                                            text: delegateRoot.isItemConnecting
-                                                                ? (delegateRoot.modelData.known ? "Connecting" : "Joining")
-                                                                : (delegateRoot.isItemDisconnecting
-                                                                    ? "Disconnecting"
-                                                                    : (delegateRoot.modelData.connected
-                                                                        ? "Disconnect"
-                                                                        : (delegateRoot.modelData.known ? "Connect" : "Join")))
-                                                            color: delegateRoot.isItemConnecting
-                                                                ? Theme.yellow
-                                                                : (delegateRoot.isItemDisconnecting || delegateRoot.modelData.connected
-                                                                    ? Theme.red
-                                                                    : Theme.darkBackground)
-                                                            font.family: Theme.fontFamily
-                                                            font.pixelSize: 9
-                                                            font.bold: true
-                                                        }
-
-                                                        MouseArea {
-                                                            anchors.fill: parent
-                                                            cursorShape: (delegateRoot.isItemConnecting || delegateRoot.isItemDisconnecting) ? Qt.ArrowCursor : Qt.PointingHandCursor
-                                                            enabled: !delegateRoot.isItemConnecting && !delegateRoot.isItemDisconnecting
-                                                            hoverEnabled: true
-                                                            onEntered: { root.focusSection = "wifi"; root.selectedWifiIndex = delegateRoot.index; root.wifiActionFocused = true }
-                                                            onClicked: {
-                                                                root.selectedWifiIndex = delegateRoot.index
-                                                                root.wifiActionFocused = true
-                                                                if (delegateRoot.modelData.connected) {
-                                                                    root.disconnectNetwork(delegateRoot.modelData.networkObject)
-                                                                } else {
-                                                                    root.connectToNetwork(delegateRoot.modelData.networkObject)
-                                                                }
-                                                            }
                                                         }
                                                     }
 
@@ -1711,8 +1680,8 @@ Scope {
                                                         font.family: Theme.fontFamily
                                                         font.pixelSize: 10
                                                         visible: text !== ""
-                                                        anchors.right: actionBtn.left
-                                                        anchors.rightMargin: 6
+                                                        anchors.right: transitText.left
+                                                        anchors.rightMargin: transitText.visible ? 6 : 0
                                                         anchors.verticalCenter: parent.verticalCenter
                                                     }
 
@@ -1726,7 +1695,7 @@ Scope {
                                                         elide: Text.ElideRight
                                                         anchors.left: signalIcon.right
                                                         anchors.leftMargin: 6
-                                                        anchors.right: lockIcon.visible ? lockIcon.left : actionBtn.left
+                                                        anchors.right: lockIcon.visible ? lockIcon.left : transitText.left
                                                         anchors.rightMargin: 6
                                                         anchors.verticalCenter: parent.verticalCenter
                                                     }
@@ -1855,8 +1824,12 @@ Scope {
                                                         height: 22
                                                         radius: 4
                                                         color: Theme.brand
-                                                        border.color: (root.activePasswordSsid === delegateRoot.modelData.ssid && root.passwordFocusItem === "ok") ? Theme.foreground : Theme.brand
-                                                        border.width: (root.activePasswordSsid === delegateRoot.modelData.ssid && root.passwordFocusItem === "ok") ? 1.5 : 1
+                                                        border.color: Theme.brand
+                                                        border.width: 1
+
+                                                        SelectionHalo {
+                                                            active: root.activePasswordSsid === delegateRoot.modelData.ssid && root.passwordFocusItem === "ok"
+                                                        }
 
                                                         Text {
                                                             anchors.centerIn: parent
@@ -1881,9 +1854,10 @@ Scope {
                                                         width: 40
                                                         height: 22
                                                         radius: 4
-                                                        color: Theme.selection
-                                                        border.color: (root.activePasswordSsid === delegateRoot.modelData.ssid && root.passwordFocusItem === "cancel") ? Theme.foreground : Theme.darkForeground
-                                                        border.width: (root.activePasswordSsid === delegateRoot.modelData.ssid && root.passwordFocusItem === "cancel") ? 1.5 : 1
+                                                        readonly property bool isSelected: root.activePasswordSsid === delegateRoot.modelData.ssid && root.passwordFocusItem === "cancel"
+                                                        color: isSelected ? Theme.selectedFill : "transparent"
+                                                        border.color: isSelected ? Theme.selectedBorder : Theme.selection
+                                                        border.width: Theme.selectedBorderWidth
 
                                                         Text {
                                                             anchors.centerIn: parent
