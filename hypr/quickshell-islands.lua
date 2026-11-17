@@ -48,6 +48,7 @@ M.bindings = {
   { key = "SUPER + CTRL + T", desc = "Time HUD and Panel", dispatch = "quickshell:timeToggle" },
   { key = "SUPER + CTRL + P", desc = "Power HUD and Panel", dispatch = "quickshell:batteryToggle" },
   { key = "SUPER + CTRL + D", desc = "Brightness HUD and Panel", dispatch = "quickshell:brightnessToggle" },
+  { key = "SUPER + CTRL + A", desc = "Volume HUD and Output devices", dispatch = "quickshell:audioToggle" },
   { key = "SUPER + CTRL + SPACE", desc = "Wallpaper switcher", dispatch = "quickshell:wallpaperToggle" },
   { key = "SUPER + SHIFT + CTRL + SPACE", desc = "Theme switcher", dispatch = "quickshell:themeToggle" },
   { key = "SUPER + ALT + N", desc = "Notification DND toggle", dispatch = "quickshell:notifToggle" },
@@ -208,9 +209,6 @@ function M.decorations()
 end
 
 function M.apply()
-  -- Drop Omarchy default audio binding so SUPER + CTRL + A is free
-  hl.unbind("SUPER + CTRL + A")
-
   for _, binding in ipairs(M.bindings) do
     hl.unbind(binding.key)
     o.bind(binding.key, binding.desc, hl.dsp.global(binding.dispatch), binding.opts)

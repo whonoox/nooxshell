@@ -120,6 +120,7 @@
     { "src": "decorations/moon.svg", "dest": "~/.config/quickshell/decorations/moon.svg" },
     { "src": "decorations/qr-code.svg", "dest": "~/.config/quickshell/decorations/qr-code.svg" },
     { "src": "decorations/signal.svg", "dest": "~/.config/quickshell/decorations/signal.svg" },
+    { "src": "bin/audio-outputs", "dest": "~/.config/quickshell/bin/audio-outputs" },
     { "src": "bin/cursor-tracker", "dest": "~/.config/quickshell/bin/cursor-tracker" },
     { "src": "bin/cursor-tracker.py", "dest": "~/.config/quickshell/bin/cursor-tracker.py" },
     { "src": "bin/picker-common.sh", "dest": "~/.config/quickshell/bin/picker-common.sh" },

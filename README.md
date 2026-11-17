@@ -103,6 +103,7 @@ line, restores `shell.json`, and brings the stock Omarchy shell back up.
 | `Super+Ctrl+B` | Bluetooth |
 | `Super+Ctrl+T` | Time |
 | `Super+Ctrl+P` | Power |
+| `Super+Ctrl+A` | Volume, with every output device: `←`/`→` pick, `↑`/`↓` level, `Enter` switch to it, `Esc` or a click outside to close |
 | `Super+Ctrl+Space` | Wallpaper picker |
 | `Super+Shift+Ctrl+Space` | Theme picker |
 | Volume / Brightness keys | Island HUDs |

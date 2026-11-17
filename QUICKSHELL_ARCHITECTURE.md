@@ -391,7 +391,7 @@ The following diagram illustrates the screen positions of each component in this
 | [`TimeBar.qml`](file:///TimeBar.qml) | `topCenter` | Hourly glance, `SUPER + CTRL + T`, or IPC (`timeBar toggle`) |
 | [`WifiBar.qml`](file:///WifiBar.qml) | `topRight` | `SUPER + CTRL + W`, IPC (`wifiBar toggle`), or connecting state |
 | [`BluetoothBar.qml`](file:///BluetoothBar.qml) | `topRight` | `SUPER + CTRL + B` or IPC (`bluetoothBar toggle`) |
-| [`AudioBar.qml`](file:///AudioBar.qml) | `centerLeft` | Hardware volume keys via shim or `omarchy audio` commands |
+| [`AudioBar.qml`](file:///AudioBar.qml) | `centerLeft` | Hardware volume keys via shim or `omarchy audio` commands; `Super+Ctrl+A` (or a click on the meter) expands one column per output device, read by `bin/audio-outputs` |
 | [`BrightnessBar.qml`](file:///BrightnessBar.qml) | `centerLeft` | Hardware brightness keys via shim |
 | [`BatteryBar.qml`](file:///BatteryBar.qml) | `centerRight` | Power state changes, critical battery level, or `SUPER + CTRL + P`; stays hidden and ignores the keybind on machines without a battery |
 | [`OmarchyMenu.qml`](file:///OmarchyMenu.qml) | `bottomCenter` | `SUPER + SPACE`, `SUPER + ALT + SPACE`, or `omarchy menu` |

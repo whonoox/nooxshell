@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# Lists the audio outputs the volume island shows, the way wiremix's Output
+# Devices tab does: every sink that can play right now, with its own level and
+# mute, and which one is the default.
+#
+# One tab-separated line per output:
+#   index  name  default(1|0)  volume%  muted(1|0)  kind  effective-sink  description
+#
+# The filter matches omarchy-audio-output-switch, so the island offers the same
+# outputs the switcher rotates through: a sink whose every port is unplugged is
+# left out, and so is the physical sink an active speaker tuning fronts --
+# picking it would only bypass the tuning.
+#
+# Volume and mute are read from the effective sink: a DSP sink (a tuning
+# filter-chain, EasyEffects) sits at a fixed 100% while real loudness lives on
+# the physical sink beneath it, which omarchy-audio-output-sink resolves. Writes
+# from the island go to that effective sink too.
+#
+# kind is one of: speaker headphones bluetooth monitor usb
+
+set -uo pipefail
+
+# pactl translates availability and headers; parse them in the C locale.
+export LC_ALL=C
+
+sinks="$(timeout 2 pactl -f json list sinks 2>/dev/null)" || sinks=""
+if [[ -z $sinks ]]; then
+  exit 0
+fi
+
+default="$(timeout 2 pactl get-default-sink 2>/dev/null || true)"
+fronted="$(omarchy-audio-tuning fronted-sink 2>/dev/null || true)"
+
+# Only virtual sinks need resolving; ALSA and Bluetooth sinks carry their own
+# level. Resolve each one through the helper the volume keys use.
+effective='{}'
+while IFS= read -r name; do
+  [[ -n $name ]] || continue
+  target="$(omarchy-audio-output-sink "$name" 2>/dev/null || true)"
+  [[ -n $target ]] || target="$name"
+  effective="$(jq -c --arg k "$name" --arg v "$target" '. + {($k): $v}' <<<"$effective")"
+done < <(jq -r '.[].name | select(test("^(alsa|bluez)_output\\.") | not)' <<<"$sinks")
+
+jq -r --arg default "$default" --arg fronted "$fronted" --argjson effective "$effective" '
+  def percent: (.volume | to_entries[0].value.value_percent // "0%") | sub("%"; "") | tonumber;
+  def kind:
+    (.properties["device.bus"] // "") as $bus
+    | (.properties["device.form_factor"] // "") as $ff
+    | ((.active_port // "") | ascii_downcase) as $port
+    | ((.name // "") | ascii_downcase) as $name
+    | if $bus == "bluetooth" then "bluetooth"
+      elif ($port | test("hdmi|displayport|iec958")) or ($name | test("hdmi|displayport")) then "monitor"
+      elif ($ff | test("headphone|headset")) or ($port | test("headphone|headset")) then "headphones"
+      elif $bus == "usb" then "usb"
+      else "speaker" end;
+
+  . as $all
+  | map({key: .name, value: {volume: percent, mute: .mute}}) | from_entries as $levels
+  | $all[]
+  | select((.ports | length == 0) or ([.ports[]? | .availability != "not available"] | any))
+  | select($fronted == "" or .name != $fronted)
+  | ($effective[.name] // .name) as $target
+  | ($levels[$target] // {volume: percent, mute: .mute}) as $level
+  | [ .index,
+      .name,
+      (if .name == $default then 1 else 0 end),
+      $level.volume,
+      (if $level.mute then 1 else 0 end),
+      kind,
+      $target,
+      ((.description // .properties["device.description"] // .name) | gsub("[\t\n]"; " "))
+    ]
+  | @tsv
+' <<<"$sinks"

@@ -1171,6 +1171,7 @@ Shortcuts
   Super+Ctrl+B        Bluetooth
   Super+Ctrl+T        Time
   Super+Ctrl+P        Power
+  Super+Ctrl+A        Volume and output devices
   Super+Ctrl+Space    Wallpaper picker
 
 Management
