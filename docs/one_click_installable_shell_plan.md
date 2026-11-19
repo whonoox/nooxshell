@@ -580,7 +580,7 @@ not a script, and `_omarchy-menu-shim`, which is a sourced fragment.
 ## 9. Distribution
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/whonoox/quickshell/master/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/whonoox/nooxshell/master/install.sh)
 ```
 
 ### How the piped install works
@@ -609,7 +609,7 @@ override the repository, the ref and the cache location.
 Pin to a release tag rather than `master` for anything reproducible:
 
 ```bash
-NOOXSHELL_REPO_REF=v1.0.0 bash <(curl -fsSL https://raw.githubusercontent.com/whonoox/quickshell/v1.0.0/install.sh)
+NOOXSHELL_REPO_REF=v1.0.0 bash <(curl -fsSL https://raw.githubusercontent.com/whonoox/nooxshell/v1.0.0/install.sh)
 ```
 
 The installer is idempotent: re-running it replaces the Hyprland block

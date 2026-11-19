@@ -11,7 +11,7 @@
 #   ./install.sh --no-theme      do not offer the theme
 #
 # One-liner install:
-#   bash <(curl -fsSL https://github.com/whonoox/quickshell/raw/master/install.sh)
+#   bash <(curl -fsSL https://github.com/whonoox/nooxshell/raw/master/install.sh)
 #
 # Every file this script touches is copied into a timestamped backup
 # directory first, and the exact list is written to a manifest so
@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-REPO_URL="${NOOXSHELL_REPO_URL:-https://github.com/whonoox/quickshell.git}"
+REPO_URL="${NOOXSHELL_REPO_URL:-https://github.com/whonoox/nooxshell.git}"
 REPO_REF="${NOOXSHELL_REPO_REF:-master}"
 CACHE_DIR="${NOOXSHELL_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/nooxshell}"
 
@@ -127,7 +127,7 @@ Options:
   -h, --help    show this help
 
 One-liner install:
-  bash <(curl -fsSL https://github.com/whonoox/quickshell/raw/master/install.sh)
+  bash <(curl -fsSL https://github.com/whonoox/nooxshell/raw/master/install.sh)
 USAGE
 }
 

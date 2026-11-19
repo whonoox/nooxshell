@@ -27,7 +27,7 @@ recorded_state() {
   jq -r --arg key "$1" '.[$key] // empty' "$STATE_FILE" 2>/dev/null || true
 }
 REPO_URL="${NOOXSHELL_REPO_URL:-$(recorded_state repo_url)}"
-REPO_URL="${REPO_URL:-https://github.com/whonoox/quickshell.git}"
+REPO_URL="${REPO_URL:-https://github.com/whonoox/nooxshell.git}"
 REPO_REF="${NOOXSHELL_REPO_REF:-$(recorded_state ref)}"
 REPO_REF="${REPO_REF:-master}"
 BACKUP_ROOT="$STATE_DIR/backups"
