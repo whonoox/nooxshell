@@ -14,7 +14,7 @@ played by OWE, whose handover with the Omarchy shell came with 4.5: on
 intros. The installer says which of the two you have.
 
 ```bash
-git clone https://github.com/whonoox/quickshell.git nooxshell
+git clone https://github.com/whonoox/nooxshell.git nooxshell
 cd nooxshell
 ./install.sh --dry-run    # optional: see every change first, touch nothing
 ./install.sh
@@ -27,13 +27,13 @@ Or in one line, which fetches the same repository into
 `~/.cache/nooxshell/repo` and runs the installer from there:
 
 ```bash
-bash <(curl -fsSL https://github.com/whonoox/quickshell/raw/master/install.sh)
+bash <(curl -fsSL https://github.com/whonoox/nooxshell/raw/master/install.sh)
 ```
 
 To install or update to a specific release, name its tag:
 
 ```bash
-NOOXSHELL_REPO_REF=v1.0.4 bash <(curl -fsSL https://github.com/whonoox/quickshell/raw/v1.0.4/install.sh)
+NOOXSHELL_REPO_REF=v1.0.4 bash <(curl -fsSL https://github.com/whonoox/nooxshell/raw/v1.0.4/install.sh)
 ```
 
 Options:

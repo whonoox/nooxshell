@@ -573,7 +573,7 @@ cmd_uninstall() {
     # The installer is gone, so the uninstaller cannot be run from it.
     # The one-liner uninstall fetches a copy.
     echo "nooxshell: no installer found; fetching the uninstaller" >&2
-    bash <(curl -fsSL "${NOOXSHELL_REPO_URL:-https://github.com/whonoox/quickshell.git}/raw/${NOOXSHELL_REPO_REF:-master}/uninstall.sh")
+    bash <(curl -fsSL "${NOOXSHELL_REPO_URL:-https://github.com/whonoox/nooxshell.git}/raw/${NOOXSHELL_REPO_REF:-master}/uninstall.sh")
     return
   }
 

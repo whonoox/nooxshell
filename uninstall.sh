@@ -15,7 +15,7 @@
 
 set -euo pipefail
 
-REPO_URL="${NOOXSHELL_REPO_URL:-https://github.com/whonoox/quickshell.git}"
+REPO_URL="${NOOXSHELL_REPO_URL:-https://github.com/whonoox/nooxshell.git}"
 REPO_REF="${NOOXSHELL_REPO_REF:-master}"
 CACHE_DIR="${NOOXSHELL_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/nooxshell}"
 
