@@ -412,17 +412,17 @@ Scope {
 
         function dndState(): string { return root.doNotDisturb ? "on" : "off" }
 
-        function isDnd(): string { return root.dndState() }
+        function isDnd(): string { return dndState() }
 
         function toggleDnd(): string {
             root.setDoNotDisturb(!root.doNotDisturb)
-            return root.dndState()
+            return dndState()
         }
 
         function setDnd(value: string): string {
             var text = String(value === undefined || value === null ? "" : value).toLowerCase()
             root.setDoNotDisturb(text === "true" || text === "1" || text === "on" || text === "yes")
-            return root.dndState()
+            return dndState()
         }
 
         function showHistory(): string { return "ok" }
