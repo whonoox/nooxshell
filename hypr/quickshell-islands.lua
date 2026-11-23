@@ -39,7 +39,7 @@ M.bindings = {
   { key = "SUPER + ESCAPE", desc = "System menu", dispatch = "quickshell:systemToggle" },
   { key = "XF86PowerOff", desc = "Power menu", dispatch = "quickshell:systemToggle", opts = { locked = true } },
   { key = "SUPER + CTRL + C", desc = "Capture menu", dispatch = "quickshell:captureToggle" },
-  { key = "SUPER + CTRL + O", desc = "Toggle menu", dispatch = "quickshell:togglesToggle" },
+  { key = "SUPER + CTRL + O", desc = "Toggles island", dispatch = "quickshell:toggleBarToggle" },
   { key = "SUPER + CTRL + H", desc = "Hardware menu", dispatch = "quickshell:hardwareToggle" },
   { key = "SUPER + CTRL + S", desc = "Share", dispatch = "quickshell:shareToggle" },
   { key = "SUPER + CTRL + R", desc = "Set reminder", dispatch = "quickshell:reminderSetToggle" },
@@ -59,6 +59,13 @@ M.bindings = {
   { key = "SUPER + ALT + L", desc = "Night light toggle", dispatch = "quickshell:nightLightToggle" },
   { key = "SUPER + ALT + K", desc = "Key sounds toggle", dispatch = "quickshell:keySoundsToggle" },
   { key = "XF86RFKill", desc = "Airplane mode toggle", dispatch = "quickshell:airplaneToggle" },
+}
+
+-- Omarchy keys the shell has moved elsewhere, dropped so they do nothing.
+--   Super+Ctrl+I   Omarchy's idle lock toggle; stay awake is Super+Alt+I,
+--                  on the toggles island.
+M.unbindings = {
+  "SUPER + CTRL + I",
 }
 
 -- Hardware keys. Omarchy binds these to the same command names by default;
@@ -215,6 +222,10 @@ function M.decorations()
 end
 
 function M.apply()
+  for _, key in ipairs(M.unbindings) do
+    hl.unbind(key)
+  end
+
   for _, binding in ipairs(M.bindings) do
     hl.unbind(binding.key)
     o.bind(binding.key, binding.desc, hl.dsp.global(binding.dispatch), binding.opts)

@@ -155,8 +155,9 @@ To integrate cleanly with the host system without fighting existing Omarchy defa
       - `SUPER + SPACE`: `quickshell:menuToggle`
       - `SUPER + ALT + SPACE`: `quickshell:appsToggle`
       - `SUPER + ESCAPE`, `XF86PowerOff`: `quickshell:systemToggle`
-      - `SUPER + CTRL + C` / `O` / `H` / `S` / `R`: `quickshell:captureToggle` / `togglesToggle` / `hardwareToggle` / `shareToggle` / `reminderSetToggle`
+      - `SUPER + CTRL + C` / `H` / `S` / `R`: `quickshell:captureToggle` / `hardwareToggle` / `shareToggle` / `reminderSetToggle`
       - `SUPER + CTRL + E`: `quickshell:emojiToggle` (the emoji picker on the menu card)
+      - `SUPER + CTRL + O`: `quickshell:toggleBarToggle` (shows the toggles island to read every toggle's state, in place of Omarchy's Toggle menu)
       - Every key Omarchy binds to a menu route is taken over, not just `SUPER + SPACE`: from 4.5 Omarchy dispatches them to its `omarchy.menu` plugin, which the installer disables, so a key left out would open nothing.
       - `SUPER + CTRL + W`: `quickshell:wifiToggle`
       - `SUPER + CTRL + B`: `quickshell:bluetoothToggle`
@@ -167,7 +168,7 @@ To integrate cleanly with the host system without fighting existing Omarchy defa
       - `SUPER + ALT + N`: `quickshell:notifToggle` (Notification DND: hides toasts and mutes app notification sounds via `bin/notification-sounds`)
       - `SUPER + ALT + M`: `quickshell:micToggle` (Microphone mute)
       - `SUPER + ALT + C`: `quickshell:cursorXRayToggle` (Cursor X-Ray mode)
-      - `SUPER + ALT + I`: `quickshell:stayAwakeToggle` (Stay awake / idle inhibition)
+      - `SUPER + ALT + I`: `quickshell:stayAwakeToggle` (Stay awake / idle inhibition). Omarchy's own idle toggle on `SUPER + CTRL + I` is unbound.
       - `SUPER + ALT + L`: `quickshell:nightLightToggle` (Night light blue light filter)
       - `XF86RFKill`: `quickshell:airplaneToggle` (Airplane mode all radios)
    - Using `global` shortcuts eliminates intermediate shell spawns, routing keystrokes straight to Quickshell's event loop.

@@ -1500,13 +1500,6 @@ Scope {
     }
 
     GlobalShortcut {
-        name: "togglesToggle"
-        description: "Toggle the Omarchy menu directly into Toggle"
-        appid: "quickshell"
-        onPressed: root.toggle("toggle")
-    }
-
-    GlobalShortcut {
         name: "hardwareToggle"
         description: "Toggle the Omarchy menu directly into Hardware"
         appid: "quickshell"

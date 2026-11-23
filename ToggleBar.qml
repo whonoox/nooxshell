@@ -29,6 +29,20 @@ Scope {
         }
     }
 
+    // Super+Ctrl+O: shows the island to read every toggle's state without
+    // changing any, hiding again like a reveal does; pressed while it is
+    // showing, it hides it at once.
+    function toggleShown() {
+        if (root.hideBar) {
+            root.reveal("none")
+        } else {
+            autoHideTimer.stop()
+            root.hideBar = true
+            root.lastTriggered = "none"
+        }
+        return root.hideBar ? "closed" : "open"
+    }
+
     function toggleNotif() {
         ToggleState.toggleDnd()
         root.reveal("notif")
@@ -123,6 +137,13 @@ Scope {
     // Global Shortcuts
     // ------------------------------------------------------------------
     GlobalShortcut {
+        name: "toggleBarToggle"
+        description: "Show or hide the toggles island"
+        appid: "quickshell"
+        onPressed: root.toggleShown()
+    }
+
+    GlobalShortcut {
         name: "notifToggle"
         description: "Toggle notifications Do Not Disturb"
         appid: "quickshell"
@@ -178,11 +199,7 @@ Scope {
         target: "toggleBar"
 
         function toggle(): string {
-            root.hideBar = !root.hideBar
-            if (!root.hideBar) {
-                root.reveal("none")
-            }
-            return root.hideBar ? "closed" : "open"
+            return root.toggleShown()
         }
 
         function open(): string {
