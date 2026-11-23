@@ -132,7 +132,8 @@
     { "src": "bin/picker-wallpapers", "dest": "~/.config/quickshell/bin/picker-wallpapers" },
     { "src": "bin/picker-themes", "dest": "~/.config/quickshell/bin/picker-themes" },
     { "src": "bin/picker-set-background", "dest": "~/.config/quickshell/bin/picker-set-background" },
-    { "src": "bin/picker-set-theme", "dest": "~/.config/quickshell/bin/picker-set-theme" }
+    { "src": "bin/picker-set-theme", "dest": "~/.config/quickshell/bin/picker-set-theme" },
+    { "src": "hooks/font-set.d/nooxshell", "dest": "~/.config/omarchy/hooks/font-set.d/nooxshell" }
   ],
 
   "shims": [

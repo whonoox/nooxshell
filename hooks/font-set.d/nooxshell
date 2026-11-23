@@ -1,0 +1,14 @@
+#!/bin/bash
+# nooxshell font-set hook, installed to ~/.config/omarchy/hooks/font-set.d/
+# and run by `omarchy font set` with the new font's name in $1.
+#
+# The shell's text is set in "monospace", which fontconfig resolves to the
+# font Omarchy just chose. Qt reads that once, when the shell starts, and
+# `omarchy font set` restarts only Omarchy's own shell, so restart this one
+# too for the islands to pick the new font up. Nothing happens when it is
+# not running.
+set -u
+
+command -v nooxshell >/dev/null 2>&1 || exit 0
+nooxshell status 2>/dev/null | grep -q "^instance: running" || exit 0
+nooxshell restart >/dev/null 2>&1 || true
