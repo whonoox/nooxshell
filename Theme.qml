@@ -135,8 +135,9 @@ QtObject {
     readonly property string brandFontName: "Nuuxfont"
     readonly property bool hasBrandFont: Qt.fontFamilies().indexOf(brandFontName) >= 0
     readonly property string brandFont: hasBrandFont ? brandFontName : fontFamily
-    property string systemFont: "monospace"
-    property string fontFamily: systemFont
+    // The system font: "monospace", which fontconfig resolves to the font
+    // `omarchy font set` chose.
+    readonly property string fontFamily: "monospace"
 
     // Island titles: the time, the Wi-Fi and Bluetooth names and the slider
     // readouts, all set in brandFont. The monospace fallback is far wider

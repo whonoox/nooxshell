@@ -346,7 +346,7 @@ Scope {
                                 Text {
                                     text: "8-Position Unified Continuous Vector Shapes"
                                     color: Theme.lightForeground
-                                    font.family: Theme.systemFont
+                                    font.family: Theme.fontFamily
                                     font.pixelSize: 11
                                 }
                             }
@@ -394,7 +394,7 @@ Scope {
                             Text {
                                 text: "Panel Fill:"
                                 color: Theme.lightForeground
-                                font.family: Theme.systemFont
+                                font.family: Theme.fontFamily
                                 font.pixelSize: 12
                             }
 
@@ -442,7 +442,7 @@ Scope {
                             Text {
                                 text: "Radius:"
                                 color: Theme.lightForeground
-                                font.family: Theme.systemFont
+                                font.family: Theme.fontFamily
                                 font.pixelSize: 12
                             }
 
@@ -496,7 +496,7 @@ Scope {
                             Text {
                                 text: "Width:"
                                 color: Theme.lightForeground
-                                font.family: Theme.systemFont
+                                font.family: Theme.fontFamily
                                 font.pixelSize: 12
                             }
 
@@ -526,7 +526,7 @@ Scope {
                             Text {
                                 text: "Height:"
                                 color: Theme.lightForeground
-                                font.family: Theme.systemFont
+                                font.family: Theme.fontFamily
                                 font.pixelSize: 12
                             }
 
@@ -558,14 +558,14 @@ Scope {
                             Text {
                                 text: "Toggle via: qs ipc call scoopTest toggle"
                                 color: Theme.darkForeground
-                                font.family: Theme.systemFont
+                                font.family: Theme.fontFamily
                                 font.pixelSize: 10
                             }
                             Item { Layout.fillWidth: true }
                             Text {
                                 text: "Click backdrop to dismiss"
                                 color: Theme.darkForeground
-                                font.family: Theme.systemFont
+                                font.family: Theme.fontFamily
                                 font.pixelSize: 10
                             }
                         }
