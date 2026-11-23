@@ -63,9 +63,14 @@ M.bindings = {
 -- Hardware keys. Omarchy binds these to the same command names by default;
 -- the shims in ~/.local/bin shadow the packaged binaries, so the islands HUD
 -- answers instead of the stock OSD.
+--
+-- Mute has to be taken over too: Omarchy binds it to its shell's own
+-- audio.mute-toggle shortcut, which never runs a command a shim could catch
+-- and shows the stock OSD. A toggle does not repeat while held.
 M.hardware_bindings = {
   { key = "XF86AudioRaiseVolume", desc = "Volume up", cmd = bin .. "omarchy-audio-output-volume +10" },
   { key = "XF86AudioLowerVolume", desc = "Volume down", cmd = bin .. "omarchy-audio-output-volume -10" },
+  { key = "XF86AudioMute", desc = "Mute", cmd = bin .. "omarchy-audio-output-volume mute-toggle", repeating = false },
   { key = "XF86MonBrightnessUp", desc = "Brightness up", cmd = bin .. "omarchy-brightness-display +10%" },
   { key = "XF86MonBrightnessDown", desc = "Brightness down", cmd = bin .. "omarchy-brightness-display 10%-" },
   { key = "XF86AudioMicMute", desc = "Microphone mute toggle", cmd = "omarchy-audio-input-mute" },
@@ -216,7 +221,7 @@ function M.apply()
 
   for _, binding in ipairs(M.hardware_bindings) do
     hl.unbind(binding.key)
-    o.bind(binding.key, binding.desc, binding.cmd, { locked = true, repeating = true })
+    o.bind(binding.key, binding.desc, binding.cmd, { locked = true, repeating = binding.repeating ~= false })
   end
 
   local namespaces = {}
