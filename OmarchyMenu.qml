@@ -38,6 +38,18 @@ Scope {
     property int dmenuMaxHeight: 0
     property bool requestActive: false
 
+    // The emoji picker (Super+Ctrl+E, or Trigger > Emoji): Omarchy's emoji
+    // list as a grid on the menu card, searched from the same header, in
+    // place of Omarchy's own overlay. emojiFromMenu is set when it was
+    // opened from a menu row, so Backspace and the back button return there.
+    readonly property bool emojiMode: mode === "emoji"
+    property bool emojiFromMenu: false
+    // { e: "😀", k: "grinning face smile ..." }, from Omarchy's emojis.json.
+    property var emojis: []
+    // The emojis matching the search, as strings.
+    property var emojiResults: []
+    readonly property int emojiCellSize: 46
+
     property string activeMenu: "root"
     property var navStack: []
     property string filterText: ""
@@ -100,9 +112,9 @@ Scope {
     // The apps menu, browsed or searched, is laid out two to a line unless
     // two_column_app_grid is off in config.toml; every other menu is a
     // single list.
-    readonly property bool gridMode: Theme.twoColumnAppGrid && !root.dmenuActive && root.activeMenu === "apps"
+    readonly property bool gridMode: Theme.twoColumnAppGrid && !root.dmenuActive && !root.emojiMode && root.activeMenu === "apps"
     readonly property int gridColumns: 2
-    readonly property var activeView: root.gridMode ? resultGrid : resultList
+    readonly property var activeView: root.emojiMode ? emojiGrid : (root.gridMode ? resultGrid : resultList)
     // One mouse-wheel notch scrolls this far; a touchpad scrolls by its
     // own pixel deltas.
     readonly property int wheelStep: 2 * (root.baseRowHeight + root.rowSpacing)
@@ -150,7 +162,7 @@ Scope {
         root.evaluateGuards()
         if (root.opened) {
             root.rebuildDisplay()
-            if (!root.dmenuActive) {
+            if (!root.dmenuActive && !root.emojiMode) {
                 if (root.filterText.trim()) root.loadProvidersForSearch()
                 else root.loadProviderForMenu(root.activeMenu)
             }
@@ -195,6 +207,10 @@ Scope {
         return "'" + String(value === undefined || value === null ? "" : value).replace(/'/g, "'\\''") + "'"
     }
 
+    function isEmojiAction(action) {
+        return /^\s*omarchy-menu-emoji\s*$/.test(String(action || ""))
+    }
+
     function runAction(action) {
         var command = String(action || "")
         if (!command) return
@@ -202,6 +218,11 @@ Scope {
         // has one beneath the time instead.
         if (/^\s*omarchy-reminder\s+(-i|--interactive)\s*$/.test(command)) {
             Reminders.requestInput()
+            return
+        }
+        // Its emoji picker is an overlay of its own; the menu has one.
+        if (root.isEmojiAction(command)) {
+            root.openEmoji(false)
             return
         }
         Quickshell.execDetached(["bash", "-lc", command])
@@ -546,7 +567,100 @@ Scope {
         Qt.callLater(function() { if (displayModel.count > 0) root.revealCursor() })
     }
 
+    function loadEmojis(raw) {
+        var data = []
+        try { data = JSON.parse(String(raw || "")) } catch (e) { data = [] }
+        root.emojis = Array.isArray(data) ? data : []
+        if (root.opened && root.emojiMode) root.rebuildEmojiDisplay()
+    }
+
+    // The same match as Omarchy's picker: the search, as typed, anywhere in
+    // an emoji's keywords.
+    function rebuildEmojiDisplay() {
+        var needle = root.filterText.trim().toLowerCase()
+        var out = []
+        for (var i = 0; i < root.emojis.length; i++) {
+            var entry = root.emojis[i]
+            if (!entry || !entry.e) continue
+            if (!needle || String(entry.k || "").toLowerCase().indexOf(needle) >= 0) out.push(String(entry.e))
+        }
+        root.emojiResults = out
+
+        if (out.length === 0) root.selectedIndex = 0
+        else if (root.selectedIndex >= out.length) root.selectedIndex = out.length - 1
+        else if (root.selectedIndex < 0) root.selectedIndex = 0
+        Qt.callLater(root.revealEmoji)
+    }
+
+    function revealEmoji() {
+        if (!root.emojiMode || root.emojiResults.length === 0) return
+        scrollAnim.stop()
+        emojiGrid.positionViewAtIndex(root.selectedIndex, GridView.Contain)
+    }
+
+    // Left and right step through the emojis in reading order, wrapping at
+    // the ends; up and down (and paging) move by whole lines and stop there.
+    function moveEmoji(delta, wrap) {
+        var count = root.emojiResults.length
+        if (count === 0) return
+        if (!root.cursorActive) {
+            root.cursorActive = true
+            root.selectedIndex = delta < 0 ? count - 1 : 0
+        } else if (wrap) {
+            root.selectedIndex = (root.selectedIndex + delta + count) % count
+        } else {
+            root.selectedIndex = Math.max(0, Math.min(count - 1, root.selectedIndex + delta))
+        }
+        root.revealEmoji()
+    }
+
+    function activateEmoji(index) {
+        if (index < 0 || index >= root.emojiResults.length) return
+        var emoji = root.emojiResults[index]
+        root.beginClose()
+        // Copies it and pastes it into the window the menu gives focus back to.
+        Quickshell.execDetached([root.omarchyPath + "/bin/omarchy-menu-emoji-insert", emoji])
+    }
+
+    function handleEmojiKey(event) {
+        var columns = emojiGrid.columns
+        var page = columns * Math.max(1, Math.floor(emojiGrid.height / emojiGrid.cellHeight))
+        if (event.key === Qt.Key_Escape) {
+            if (root.filterText) root.setFilter("")
+            else root.cancel()
+        } else if (root.editsFilter(event)) {
+            root.setFilter(root.editedFilter(event))
+        } else if (event.key === Qt.Key_Backspace) {
+            root.goBack()
+        } else if (event.key === Qt.Key_Left) {
+            root.moveEmoji(-1, true)
+        } else if (event.key === Qt.Key_Right) {
+            root.moveEmoji(1, true)
+        } else if (event.key === Qt.Key_Up) {
+            root.moveEmoji(-columns, false)
+        } else if (event.key === Qt.Key_Down) {
+            root.moveEmoji(columns, false)
+        } else if (event.key === Qt.Key_PageUp) {
+            root.moveEmoji(-page, false)
+        } else if (event.key === Qt.Key_PageDown) {
+            root.moveEmoji(page, false)
+        } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+            root.activateEmoji(root.cursorActive ? root.selectedIndex : 0)
+        } else if (event.text && event.text.length === 1 && event.text.charCodeAt(0) >= 32
+                   && event.text.charCodeAt(0) !== 127
+                   && (event.modifiers === Qt.NoModifier || event.modifiers === Qt.ShiftModifier)) {
+            root.setFilter(root.filterText + event.text)
+        } else {
+            return false
+        }
+        return true
+    }
+
     function rebuildDisplay() {
+        if (root.emojiMode) {
+            root.rebuildEmojiDisplay()
+            return
+        }
         if (root.dmenuActive) {
             root.rebuildDmenuDisplay()
             return
@@ -769,7 +883,7 @@ Scope {
         root.filterText = nextFilter
         root.selectedIndex = 0
         root.cursorActive = root.mode !== "input"
-        if (!root.dmenuActive && root.filterText.trim()) root.loadProvidersForSearch()
+        if (!root.dmenuActive && !root.emojiMode && root.filterText.trim()) root.loadProvidersForSearch()
         root.rebuildDisplay()
     }
 
@@ -786,6 +900,12 @@ Scope {
     }
 
     function goBack() {
+        if (root.emojiMode) {
+            if (!root.emojiFromMenu) return false
+            root.mode = "menu"
+            root.setActiveMenu(root.activeMenu, false)
+            return true
+        }
         if (root.activeMenu === "root") return false
         if (root.navStack.length > 0) {
             var previous = root.navStack[root.navStack.length - 1]
@@ -829,6 +949,10 @@ Scope {
 
     function activateIndex(index, fromPointer) {
         if (root.deleteConfirmOpen) return
+        if (root.emojiMode) {
+            root.activateEmoji(index)
+            return
+        }
         if (root.dmenuActive) {
             if (root.mode === "input") {
                 root.applyDmenuSelection(root.filterText)
@@ -860,6 +984,11 @@ Scope {
 
     function applySelected(id, action) {
         if (!id) { root.cancel(); return }
+        // The emoji picker opens on the card in place, without closing it.
+        if (root.isEmojiAction(action)) {
+            root.openEmoji(true)
+            return
+        }
         root.beginClose()
         root.runAction(action)
     }
@@ -974,6 +1103,39 @@ Scope {
 
         PopoutCoordinator.claim("menu")
         Qt.callLater(function() { keyCatcher.forceActiveFocus() })
+    }
+
+    // fromMenu keeps the menu the picker was opened from (activeMenu and
+    // navStack) for goBack(); opened by itself it has nothing to go back to.
+    function openEmoji(fromMenu) {
+        root.requestSerial += 1
+        root.lastPointer = Qt.point(-1, -1)
+        root.mode = "emoji"
+        root.emojiFromMenu = !!fromMenu
+        root.requestActive = false
+        root.selectionFile = ""
+        root.doneFile = ""
+        if (!fromMenu) {
+            root.activeMenu = "root"
+            root.navStack = []
+        }
+        root.filterText = ""
+        root.selectedIndex = 0
+        root.cursorActive = true
+        dismissTimer.stop()
+        root.isDismissing = false
+        root.rebuildDisplay()
+        panel.screen = root.activeScreen
+        root.opened = true
+
+        PopoutCoordinator.claim("menu")
+        Qt.callLater(function() { keyCatcher.forceActiveFocus() })
+    }
+
+    function toggleEmoji() {
+        if (root.opened && root.emojiMode) root.cancel()
+        else root.openEmoji(false)
+        return "ok"
     }
 
     function openRoute(initialMenu) {
@@ -1233,6 +1395,13 @@ Scope {
     }
 
     FileView {
+        id: emojiFile
+        path: root.omarchyPath + "/shell/plugins/emojis/emojis.json"
+        printErrors: false
+        onLoaded: root.loadEmojis(text())
+    }
+
+    FileView {
         id: launcherHidesFile
         path: root.omarchyPath + "/default/omarchy/launcher.hides"
         watchChanges: true
@@ -1289,6 +1458,14 @@ Scope {
         function input(payload: string): string { return root.summon(payload) }
         function refresh(): string { return root.refresh() }
         function ping(): string { return root.ping() }
+        function emoji(): string { return root.toggleEmoji() }
+    }
+
+    GlobalShortcut {
+        name: "emojiToggle"
+        description: "Toggle the emoji picker on the menu"
+        appid: "quickshell"
+        onPressed: root.toggleEmoji()
     }
 
     GlobalShortcut {
@@ -1463,6 +1640,11 @@ Scope {
                         return
                     }
 
+                    if (root.emojiMode) {
+                        if (root.handleEmojiKey(event)) event.accepted = true
+                        return
+                    }
+
                     if (event.key === Qt.Key_Delete) {
                         root.requestDeleteSelected()
                         event.accepted = true
@@ -1550,7 +1732,9 @@ Scope {
                             Layout.preferredHeight: 28
                             radius: 6
                             color: Theme.surface
-                            visible: root.activeMenu !== "root" && !root.filterText && !root.dmenuActive
+                            visible: !root.filterText && (root.emojiMode
+                                ? root.emojiFromMenu
+                                : root.activeMenu !== "root" && !root.dmenuActive)
 
                             Text {
                                 anchors.centerIn: parent
@@ -1592,6 +1776,7 @@ Scope {
                                     Layout.fillWidth: true
                                     text: {
                                         if (root.filterText) return root.filterText
+                                        if (root.emojiMode) return "Search emojis…"
                                         if (root.dmenuActive) return root.dmenuPrompt + "…"
                                         var entry = root.item(root.activeMenu)
                                         return ((entry ? (entry.title || entry.label) : "Go")) + "…"
@@ -1637,8 +1822,8 @@ Scope {
                     ListView {
                         id: resultList
                         anchors.fill: parent
-                        model: root.gridMode ? null : displayModel
-                        visible: !root.gridMode
+                        model: root.gridMode || root.emojiMode ? null : displayModel
+                        visible: !root.gridMode && !root.emojiMode
                         delegate: rowDelegate
                         clip: true
                         spacing: root.rowSpacing
@@ -1681,6 +1866,65 @@ Scope {
                         cellHeight: root.baseRowHeight + root.rowSpacing
                         boundsBehavior: Flickable.StopAtBounds
                         interactive: false
+                    }
+
+                    // The emoji picker: as many columns of emojiCellSize as
+                    // fit, stretched to fill the width.
+                    GridView {
+                        id: emojiGrid
+                        readonly property int columns: Math.max(1, Math.floor(width / root.emojiCellSize))
+
+                        anchors.fill: parent
+                        model: root.emojiMode ? root.emojiResults : null
+                        visible: root.emojiMode
+                        clip: true
+                        cellWidth: width / columns
+                        cellHeight: root.emojiCellSize
+                        boundsBehavior: Flickable.StopAtBounds
+                        interactive: false
+
+                        delegate: Item {
+                            id: emojiCell
+                            required property int index
+                            required property string modelData
+                            readonly property bool hasCursor: root.cursorActive && emojiCell.index === root.selectedIndex
+
+                            width: emojiGrid.cellWidth
+                            height: emojiGrid.cellHeight
+
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.margins: root.rowSpacing / 2
+                                radius: 6
+                                color: emojiCell.hasCursor ? Theme.selectedFill : "transparent"
+                                border.color: Theme.selectedBorder
+                                border.width: emojiCell.hasCursor ? Theme.selectedBorderWidth : 0
+                            }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: emojiCell.modelData
+                                textFormat: Text.PlainText
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 24
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onPositionChanged: function(mouse) {
+                                    if (!root.pointerMoved(mapToItem(null, mouse.x, mouse.y))) return
+                                    root.cursorActive = true
+                                    root.selectedIndex = emojiCell.index
+                                }
+                                onClicked: {
+                                    root.cursorActive = true
+                                    root.selectedIndex = emojiCell.index
+                                    root.activateEmoji(emojiCell.index)
+                                }
+                            }
+                        }
                     }
 
                     // Wheel and touchpad scroll the view; the cursor stays
@@ -1855,7 +2099,8 @@ Scope {
                     Column {
                         anchors.centerIn: parent
                         spacing: 8
-                        visible: displayModel.count === 0 && root.mode !== "input"
+                        visible: (root.emojiMode ? root.emojiResults.length === 0 : displayModel.count === 0)
+                            && root.mode !== "input"
 
                         Text {
                             text: "󰈉"

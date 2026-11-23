@@ -43,6 +43,7 @@ M.bindings = {
   { key = "SUPER + CTRL + H", desc = "Hardware menu", dispatch = "quickshell:hardwareToggle" },
   { key = "SUPER + CTRL + S", desc = "Share", dispatch = "quickshell:shareToggle" },
   { key = "SUPER + CTRL + R", desc = "Set reminder", dispatch = "quickshell:reminderSetToggle" },
+  { key = "SUPER + CTRL + E", desc = "Emojis", dispatch = "quickshell:emojiToggle" },
   { key = "SUPER + CTRL + W", desc = "Wifi HUD and Panel", dispatch = "quickshell:wifiToggle" },
   { key = "SUPER + CTRL + B", desc = "Bluetooth HUD and Panel", dispatch = "quickshell:bluetoothToggle" },
   { key = "SUPER + CTRL + T", desc = "Time HUD and Panel", dispatch = "quickshell:timeToggle" },

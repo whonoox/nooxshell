@@ -31,6 +31,11 @@ if [[ ${1-} == menu && ${2-} == input ]]; then
   exec "$here/omarchy-menu-input" "$@"
 fi
 
+if [[ ${1-} == menu && ${2-} == emoji ]]; then
+  shift 2
+  exec "$here/omarchy-menu-emoji" "$@"
+fi
+
 if [[ ${1-} == menu ]]; then
   shift
   exec "$here/omarchy-menu" "$@"

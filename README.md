@@ -99,6 +99,7 @@ line, restores `shell.json`, and brings the stock Omarchy shell back up.
 | `Super+Alt+Space` | Apps menu |
 | `Super+Esc` / power key | System menu |
 | `Super+Ctrl+C` / `O` / `H` / `S` / `R` | Capture, Toggle, Hardware, Share and Set reminder menus |
+| `Super+Ctrl+E` | Emoji picker on the menu: type to search, arrows to pick, `Enter` to type it into the focused window |
 | `Super+Ctrl+W` | Wi-Fi |
 | `Super+Ctrl+B` | Bluetooth |
 | `Super+Ctrl+T` | Time |

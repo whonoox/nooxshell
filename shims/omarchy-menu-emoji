@@ -1,0 +1,19 @@
+#!/bin/bash
+# omarchy:summary=Launch emojis
+# omarchy:group=menu
+# omarchy:examples=omarchy menu emoji
+
+# Shadow of /usr/share/omarchy/bin/omarchy-menu-emoji. Opens the emoji
+# picker on this user's menu island, or closes it if it is already open,
+# instead of the Omarchy shell's overlay. Falls back to the packaged command
+# when that instance is not answering.
+
+set -euo pipefail
+
+source "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")/_omarchy-menu-shim"
+
+if ! menu_instance_ready; then
+  exec /usr/share/omarchy/bin/omarchy-menu-emoji "$@"
+fi
+
+menu_call emoji
