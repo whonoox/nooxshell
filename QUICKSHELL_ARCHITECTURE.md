@@ -163,7 +163,7 @@ To integrate cleanly with the host system without fighting existing Omarchy defa
       - `SUPER + CTRL + P`: `quickshell:batteryToggle`
       - `SUPER + CTRL + SPACE`: `quickshell:wallpaperToggle`
       - `SUPER + SHIFT + CTRL + SPACE`: `quickshell:themeToggle`
-      - `SUPER + ALT + N`: `quickshell:notifToggle` (Notification DND)
+      - `SUPER + ALT + N`: `quickshell:notifToggle` (Notification DND: hides toasts and mutes app notification sounds via `bin/notification-sounds`)
       - `SUPER + ALT + M`: `quickshell:micToggle` (Microphone mute)
       - `SUPER + ALT + C`: `quickshell:cursorXRayToggle` (Cursor X-Ray mode)
       - `SUPER + ALT + I`: `quickshell:stayAwakeToggle` (Stay awake / idle inhibition)

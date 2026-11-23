@@ -14,6 +14,18 @@ QtObject {
     // ------------------------------------------------------------------
     property bool dnd: false
     property bool _hydratingNotif: false
+    property bool _notifSoundsSynced: false
+
+    // DND silences the sounds apps play for their notifications as well as
+    // the toasts; see bin/notification-sounds. Run again once the saved
+    // state is first read, so a DND left on (or off) before a restart is
+    // put back either way. The script does nothing when already in step.
+    onDndChanged: syncNotifSounds()
+
+    function syncNotifSounds() {
+        root._notifSoundsSynced = true
+        Quickshell.execDetached([Quickshell.shellPath("bin/notification-sounds"), root.dnd ? "mute" : "unmute"])
+    }
 
     function toggleDnd() {
         setDnd(!root.dnd)
@@ -57,6 +69,7 @@ QtObject {
                 root.dnd = !!(parsed && parsed.dnd)
             } catch (e) { }
             root._hydratingNotif = false
+            if (!root._notifSoundsSynced) root.syncNotifSounds()
         }
         onFileChanged: reload()
     }

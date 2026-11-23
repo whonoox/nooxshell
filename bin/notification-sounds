@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# Silences the sounds apps play for their own notifications while Do Not
+# Disturb is on, and gives them back when it goes off.
+#
+#   notification-sounds mute     DND went on
+#   notification-sounds unmute   DND went off
+#
+# The shell never plays a notification sound: the apps do, each through its
+# own audio stream. Telegram would stay quiet by itself if the notification
+# server said it was Inhibited, but Quickshell's server has no such
+# property, so the only way to quiet it is to mute the stream.
+#
+# Muting a stream that is already playing would let the start of every
+# sound through. Instead this mutes the app in WirePlumber's per-app stream
+# memory (~/.local/state/wireplumber/stream-properties), which every new
+# stream from that app starts with, before a single sample plays. The
+# memory is written by muting a live stream, so a moment of silence is
+# played under the app's name and muted (or unmuted) as it plays. Streams
+# already playing are muted too.
+#
+# Each target below is a stream property and the values it may carry:
+#   media.role event   desktop event sounds (libcanberra and the like);
+#                      PipeWire names the role Notification
+#   application.name   apps that play their notification sound themselves.
+#                      This mutes all of the app's sound while DND is on,
+#                      since it plays everything through one stream.
+#
+# Only what this script muted is unmuted again, so an app already muted by
+# hand stays muted after DND. That list is kept in STATE_FILE, which also
+# carries it across a shell restart.
+
+set -uo pipefail
+export LC_ALL=C
+
+TARGETS=(
+  "media.role=event|event,Notification"
+  "application.name=Telegram|Telegram"
+)
+
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/nooxshell"
+STATE_FILE="$STATE_DIR/dnd-muted-sounds"
+PROBE_NAME="nooxshell-dnd-probe"
+
+action="${1:-}"
+case $action in
+  mute|unmute) ;;
+  *) echo "usage: ${0##*/} mute|unmute" >&2; exit 2 ;;
+esac
+
+command -v pactl >/dev/null && command -v paplay >/dev/null && command -v jq >/dev/null || exit 0
+
+mkdir -p "$STATE_DIR"
+exec 9>"$STATE_DIR/dnd-muted-sounds.lock"
+flock 9
+touch "$STATE_FILE"
+
+recorded() { grep -qxF -- "$1" "$STATE_FILE"; }
+
+forget() {
+  local rest
+  rest="$(grep -vxF -- "$1" "$STATE_FILE")"
+  if [[ -n $rest ]]; then printf '%s\n' "$rest" >"$STATE_FILE"; else : >"$STATE_FILE"; fi
+}
+
+sink_inputs() { timeout 2 pactl -f json list sink-inputs 2>/dev/null || echo '[]'; }
+
+# Plays a second of silence under PROPERTY=VALUE, so WirePlumber files the
+# stream under the same key as the app's own, and sets its mute to WANT
+# (true|false). Prints the mute the stream started with: the remembered one.
+probe() {
+  local property="$1" value="$2" want="$3"
+  head -c 192000 /dev/zero |
+    paplay --raw --format=s16le --rate=48000 --channels=2 \
+      --property="$property=$value" --property="media.name=$PROBE_NAME" &
+  local player=$! index="" started="" i
+
+  for (( i = 0; i < 40; i++ )); do
+    read -r index started < <(sink_inputs |
+      jq -r --arg name "$PROBE_NAME" \
+        'map(select(.properties["media.name"] == $name)) | first | select(.) | "\(.index) \(.mute)"')
+    [[ -n $index ]] && break
+    sleep 0.025
+  done
+
+  if [[ -n $index ]]; then
+    pactl set-sink-input-mute "$index" "$([[ $want == true ]] && echo 1 || echo 0)" 2>/dev/null
+  fi
+  wait "$player" 2>/dev/null
+  printf '%s\n' "${started:-unknown}"
+}
+
+# Sets the mute of every live stream (other than a probe) whose PROPERTY is
+# one of VALUES, matched without regard to case.
+set_live() {
+  local property="$1" values="$2" want="$3" index
+  while read -r index; do
+    [[ -n $index ]] && pactl set-sink-input-mute "$index" "$([[ $want == true ]] && echo 1 || echo 0)" 2>/dev/null
+  done < <(sink_inputs | jq -r --arg p "$property" --arg v "$values" --arg probe "$PROBE_NAME" '
+    ($v | ascii_downcase | split(",")) as $vs
+    | .[] | select(.properties["media.name"] != $probe)
+    | select((.properties[$p] // "" | ascii_downcase) as $x | any($vs[]; . == $x))
+    | .index')
+}
+
+for target in "${TARGETS[@]}"; do
+  spec="${target%%|*}"
+  values="${target#*|}"
+  property="${spec%%=*}"
+  value="${spec#*=}"
+
+  if [[ $action == mute ]]; then
+    recorded "$spec" && { set_live "$property" "$values" true; continue; }
+    started="$(probe "$property" "$value" true)"
+    # Muted before DND: the user's own choice, left alone and not recorded.
+    [[ $started == true ]] && continue
+    [[ $started == false ]] && echo "$spec" >>"$STATE_FILE"
+    set_live "$property" "$values" true
+  else
+    recorded "$spec" || continue
+    probe "$property" "$value" false >/dev/null
+    set_live "$property" "$values" false
+    forget "$spec"
+  fi
+done
