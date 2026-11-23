@@ -498,7 +498,7 @@ Scope {
             anchors { top: true; bottom: true; left: true; right: true }
 
             WlrLayershell.namespace: "notification-panel-main"
-            WlrLayershell.layer: WlrLayer.Top
+            WlrLayershell.layer: Theme.islandLayer
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"

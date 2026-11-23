@@ -231,6 +231,15 @@ function M.apply()
     ignore_alpha = 0.005,
   })
 
+  -- The islands and the cursor X-Ray share the Overlay layer (see
+  -- Theme.islandLayer). Within a layer Hyprland draws higher orders first,
+  -- so a lower order lands on top: keep the X-Ray cursor above an island
+  -- that opens after it.
+  hl.layer_rule({
+    match = { namespace = "^cursor-xray-main$" },
+    order = -1,
+  })
+
   -- The pickers animate themselves: they open zoomed into the wallpaper on
   -- screen and close zoomed into the new one, so any layer animation of
   -- Hyprland's own shows up as a frame that pops in or fades out over a

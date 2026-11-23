@@ -517,7 +517,7 @@ Scope {
                 exclusionMode: ExclusionMode.Ignore
 
                 WlrLayershell.namespace: "bluetooth-panel-twin-dismiss"
-                WlrLayershell.layer: WlrLayer.Top
+                WlrLayershell.layer: Theme.islandLayer
                 WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
                 MouseArea {
@@ -551,7 +551,7 @@ Scope {
             color: "transparent"
 
             WlrLayershell.namespace: "bluetooth-panel-main"
-            WlrLayershell.layer: WlrLayer.Top
+            WlrLayershell.layer: Theme.islandLayer
             // Exclusive prime for 75ms forces Hyprland to transfer focus immediately, then settles on OnDemand
             WlrLayershell.keyboardFocus: root.isExpanded
                 ? (root.focusPrimed ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.Exclusive)

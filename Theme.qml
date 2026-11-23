@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
 
 QtObject {
     id: root
@@ -60,6 +61,17 @@ QtObject {
     readonly property color selectedBorder: darkForeground
     readonly property real selectedBorderWidth: 1
     readonly property real selectedHaloPad: spacing / 2
+
+    // The layer every island, panel and picker sits on. Overlay, not Top:
+    // Hyprland lets a Top surface over a fullscreen window only if it
+    // mapped after the window went fullscreen, and pushes every Top surface
+    // already on screen beneath it (in the scrolling layout, on more
+    // occasions still). So a pinned island, like a critical battery, was
+    // covered by any fullscreen app, and on a scrolling workspace every
+    // island was. Overlay is always drawn above fullscreen windows. The
+    // cursor X-Ray shares the layer and is kept on top of the islands by a
+    // layer rule in hypr/quickshell-islands.lua.
+    readonly property int islandLayer: WlrLayer.Overlay
 
     // Dimensions
     //

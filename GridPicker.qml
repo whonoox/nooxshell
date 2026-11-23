@@ -334,7 +334,7 @@ Scope {
             exclusionMode: ExclusionMode.Ignore
 
             WlrLayershell.namespace: root.namespace
-            WlrLayershell.layer: WlrLayer.Top
+            WlrLayershell.layer: Theme.islandLayer
             WlrLayershell.keyboardFocus: root.mapped ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
             // Clicks pass through until the grid is on screen.
             mask: root.shown ? null : emptyRegion

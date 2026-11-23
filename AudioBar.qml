@@ -646,7 +646,7 @@ Scope {
             exclusionMode: ExclusionMode.Ignore
 
             WlrLayershell.namespace: "audio-panel-twin-dismiss"
-            WlrLayershell.layer: WlrLayer.Top
+            WlrLayershell.layer: Theme.islandLayer
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
             MouseArea {
@@ -679,7 +679,7 @@ Scope {
             anchors.right: true
 
             WlrLayershell.namespace: "audio-panel-main"
-            WlrLayershell.layer: WlrLayer.Top
+            WlrLayershell.layer: Theme.islandLayer
             // Exclusive for as long as the island is expanded; collapsing or
             // closing returns the keyboard.
             WlrLayershell.keyboardFocus: root.isExpanded && !root.hideBar
