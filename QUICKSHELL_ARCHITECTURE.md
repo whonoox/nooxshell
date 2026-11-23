@@ -388,7 +388,7 @@ The following diagram illustrates the screen positions of each component in this
 | Component | Position | Trigger / Reveal Mechanism |
 | :--- | :--- | :--- |
 | [`WorkspaceBar.qml`](file:///WorkspaceBar.qml) | `topLeft` | Auto-reveals on workspace/window switch in full-width mode; auto-hides |
-| [`TimeBar.qml`](file:///TimeBar.qml) | `topCenter` | Hourly glance, `SUPER + CTRL + T`, or IPC (`timeBar toggle`) |
+| [`TimeBar.qml`](file:///TimeBar.qml) | `topCenter` | Hourly glance, `SUPER + CTRL + T`, IPC (`timeBar toggle`), or an Omarchy reminder: `SUPER + CTRL + R` opens the reminder input beneath the time, `Reminders.qml` takes reminder notifications off the toast stack; the island rings the alarm when one goes off and lists pending ones when expanded |
 | [`WifiBar.qml`](file:///WifiBar.qml) | `topRight` | `SUPER + CTRL + W`, IPC (`wifiBar toggle`), or connecting state |
 | [`BluetoothBar.qml`](file:///BluetoothBar.qml) | `topRight` | `SUPER + CTRL + B` or IPC (`bluetoothBar toggle`) |
 | [`AudioBar.qml`](file:///AudioBar.qml) | `centerLeft` | Hardware volume keys via shim or `omarchy audio` commands; `Super+Ctrl+A` (or a click on the meter) expands one column per output device, read by `bin/audio-outputs` |

@@ -105,6 +105,14 @@ Scope {
     ]
 
     function handleNotification(notification) {
+        // Omarchy's reminders are shown on the time island, not as toasts,
+        // and DND does not hold them back: they were set on purpose. Left
+        // untracked, so the object is freed once the island has its text.
+        if (Reminders.claims(notification)) {
+            Reminders.take(notification.summary, notification.body)
+            return
+        }
+
         root.dismissTimer.stop()
         if (root.isDismissing) {
             popupModel.clear()

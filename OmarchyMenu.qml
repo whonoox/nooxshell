@@ -198,6 +198,12 @@ Scope {
     function runAction(action) {
         var command = String(action || "")
         if (!command) return
+        // Omarchy's reminder input is a window of its own; the time island
+        // has one beneath the time instead.
+        if (/^\s*omarchy-reminder\s+(-i|--interactive)\s*$/.test(command)) {
+            Reminders.requestInput()
+            return
+        }
         Quickshell.execDetached(["bash", "-lc", command])
     }
 
@@ -1338,13 +1344,6 @@ Scope {
     }
 
     GlobalShortcut {
-        name: "reminderSetToggle"
-        description: "Set a reminder from the Omarchy menu"
-        appid: "quickshell"
-        onPressed: root.toggle("reminder-set")
-    }
-
-    GlobalShortcut {
         name: "menuRefresh"
         description: "Re-parse the Omarchy menu JSONC files"
         appid: "quickshell"
@@ -1365,7 +1364,7 @@ Scope {
         anchors { top: true; bottom: true; left: true; right: true }
         color: "transparent"
         WlrLayershell.namespace: "quickshell-omarchy-menu"
-        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.layer: Theme.islandLayer
         WlrLayershell.keyboardFocus: root.opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
         exclusionMode: ExclusionMode.Ignore
 
