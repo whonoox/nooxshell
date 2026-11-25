@@ -292,6 +292,7 @@ remove_installed() {
 remove_empty_dirs() {
   local dir
   for dir in \
+    "$HOME/.local/share/fonts/nooxshell" \
     "$HOME/.config/quickshell/decorations" \
     "$HOME/.config/quickshell/bin" \
     "$HOME/.config/quickshell"; do
@@ -442,6 +443,10 @@ main() {
 
   remove_installed
   remove_empty_dirs
+  # NooxFont is gone from the font directory; drop it from the cache too.
+  if (( ! DRY_RUN )) && command -v fc-cache >/dev/null 2>&1; then
+    fc-cache -f "$HOME/.local/share/fonts" >/dev/null 2>&1 || true
+  fi
   remove_hypr_module
   remove_app_blur
   report_omarchy_config

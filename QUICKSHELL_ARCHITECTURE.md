@@ -224,9 +224,9 @@ The following core packages, daemons, and system utilities power this setup:
 | **`upower`** | Power Management | Backs `Quickshell.Services.UPower` for battery tracking |
 | **`brightnessctl`** | Hardware Backlight | Adjusts internal display panel luminance |
 | **`jq`** | JSON Processor | Parses menu JSONC files, network dumps, and notification data |
-| **`fontconfig`** (`fc-cache`) | Font Cache | Rebuilds the user font cache after the brand font is installed |
+| **`fontconfig`** (`fc-cache`) | Font Cache | Rebuilds the user font cache after NooxFont is installed or removed |
 | **`uwsm`** (`uwsm-app`) | App Session Manager | Launches desktop apps in isolated systemd scopes |
-| **`Nuuxfont`** | Brand Typography | Headlines, logo glyphs, and title styling. Installed system-wide, not bundled with the shell; `Theme.qml` falls back to the system font when absent |
+| **`NooxFont`** | Typography | The shell's typeface: island titles and readouts (`Theme.displayFont`). Ships in `fonts/` under the SIL OFL 1.1 and is installed to `~/.local/share/fonts/nooxshell/` (opt-out). Without it `Theme.qml` uses the system font |
 
 ---
 

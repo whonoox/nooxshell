@@ -136,6 +136,11 @@
     { "src": "hooks/font-set.d/nooxshell", "dest": "~/.config/omarchy/hooks/font-set.d/nooxshell" }
   ],
 
+  "fonts": [
+    { "src": "fonts/NooxFont-Regular.ttf", "dest": "~/.local/share/fonts/nooxshell/NooxFont-Regular.ttf" },
+    { "src": "fonts/OFL.txt", "dest": "~/.local/share/fonts/nooxshell/OFL.txt" }
+  ],
+
   "shims": [
     { "src": "shims/omarchy", "dest": "~/.local/bin/omarchy", "mode": "0755" },
     { "src": "shims/omarchy-audio-output-volume", "dest": "~/.local/bin/omarchy-audio-output-volume", "mode": "0755" },

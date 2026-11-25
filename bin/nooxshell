@@ -192,18 +192,19 @@ cmd_doctor() {
     echo "          panels would use the default palette instead of the live theme"
   fi
 
-  # The brand font is installed system-wide, not shipped with the shell.
-  # Theme.qml falls back to the system font when it is absent.
+  # NooxFont ships with the shell, but the install can opt out of it, and
+  # Theme.qml then sets titles in the system font.
   #
   # The count is taken with awk, which always succeeds: `grep -c` exits 1
   # when it finds nothing, and under set -e that would abort the command
   # on a machine without the font.
-  local brand_count
-  brand_count="$(fc-list 2>/dev/null | awk -v f=": Nuuxfont:" 'index($0, f) { c++ } END { print c + 0 }')"
-  if (( brand_count > 0 )); then
-    echo "font:     Nuuxfont"
+  local font_count
+  font_count="$(fc-list 2>/dev/null | awk -v f=": NooxFont:" 'index($0, f) { c++ } END { print c + 0 }')"
+  if (( font_count > 0 )); then
+    echo "font:     NooxFont"
   else
-    echo "font:     Nuuxfont not installed; using the system font"
+    echo "font:     NooxFont not installed; titles use the system font"
+    echo "          install it with: nooxshell update, or install.sh --font"
   fi
 
   # Check that the Omarchy lock screen target is answering over IPC

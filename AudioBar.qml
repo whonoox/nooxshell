@@ -573,8 +573,8 @@ Scope {
                 readonly property bool boosted: meter.device.volume > 1.0
                 text: String(Math.round(Math.min(1, meter.device.volume) * 100)) + (boosted ? "+" : "")
                 color: meter.device.muted ? Theme.red : root.accentFor(meter.device)
-                font.family: Theme.brandFont
-                font.pixelSize: boosted ? Theme.titleSize - 3 : Theme.titleSize
+                font.family: Theme.displayFont
+                font.pixelSize: boosted ? Theme.readoutSize - 3 : Theme.readoutSize
                 font.weight: Theme.titleWeight
                 font.capitalization: Font.AllUppercase
                 Behavior on color { ColorAnimation { duration: 120 } }

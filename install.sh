@@ -9,6 +9,7 @@
 #   ./install.sh --no-start      do not start the shell afterwards
 #   ./install.sh --theme         also install the Nooxnpaints theme, no prompt
 #   ./install.sh --no-theme      do not offer the theme
+#   ./install.sh --no-font       do not install NooxFont (or remove it)
 #
 # One-liner install:
 #   bash <(curl -fsSL https://github.com/whonoox/nooxshell/raw/master/install.sh)
@@ -37,6 +38,10 @@ SKIP_DEPS=0
 NO_START=0
 # The companion theme: "" asks, "yes" installs it, "no" skips it.
 THEME_CHOICE=""
+# NooxFont: "" follows the last install's answer, or asks (default yes);
+# "yes" installs it, "no" skips it and removes a copy an earlier install
+# put there.
+FONT_CHOICE=""
 
 # Per-run backup of everything touched, plus a one-time pristine copy of the
 # files that existed before the first install.
@@ -124,6 +129,9 @@ Options:
   --no-start    do not start the shell afterwards
   --theme       also install the Nooxnpaints theme and make it current
   --no-theme    do not offer the theme
+  --font        install NooxFont, the shell's typeface, without asking
+  --no-font     do not install NooxFont; removes it if an earlier
+                install added it (titles use the system font)
   -h, --help    show this help
 
 One-liner install:
@@ -415,29 +423,100 @@ install_shims() {
   ok "Installed $count shims"
 }
 
-# The brand font is personal and is not distributed with the shell. It is
-# expected to be installed system-wide (or per-user) on the machines that
-# have it, where fontconfig makes it visible to every application. The
-# shell asks for it by family name and falls back to the system font when
-# it is absent, so nothing here is required for the shell to work.
-check_brand_font() {
-  local family="Nuuxfont"
+# NooxFont is the shell's typeface, shipped in fonts/ with its license
+# (SIL OFL 1.1). It is installed per user into its own directory under
+# ~/.local/share/fonts, where fontconfig finds it, so the uninstaller can
+# remove exactly what was put there.
+#
+# It is opt-out: the prompt defaults to yes, and --yes or a run without a
+# terminal takes that default. The answer is recorded in state.json, so
+# `nooxshell update` keeps the font current without asking again, and an
+# update never brings back a font the user declined. An install from
+# before the font shipped has no answer recorded, so its first update
+# asks. --font and --no-font override the recorded answer.
+install_fonts() {
+  local entries=()
+  local entry
+  while IFS= read -r entry; do
+    entries+=("$entry")
+  done < <(manifest_list '.fonts')
+  (( ${#entries[@]} > 0 )) || return 0
 
-  # `grep -q` exits at the first match and closes the pipe, so fc-list
-  # takes a SIGPIPE. Under pipefail that turns a successful match into a
-  # failure, so the output is captured first and grep runs on the result.
-  #
-  # `grep -c` exits 1 when it counts nothing, which is exactly the case
-  # of a machine without the font. Under set -e that would abort the
-  # install, so the count is taken with awk, which always succeeds.
-  local installed
-  installed="$(fc-list 2>/dev/null | awk -v f=": $family:" 'index($0, f) { c++ } END { print c + 0 }')"
+  local choice="$FONT_CHOICE"
+  local recorded=""
+  if [[ -f $STATE_DIR/state.json ]]; then
+    recorded="$(jq -r '.font // empty' "$STATE_DIR/state.json" 2>/dev/null || true)"
+  fi
+  if [[ -z $choice ]]; then
+    choice="$recorded"
+  fi
+  if [[ -z $choice ]]; then
+    choice="yes"
+    if (( ! ASSUME_YES && ! DRY_RUN )) && [[ -t 0 ]]; then
+      local reply
+      read -r -p "Install NooxFont, the shell's typeface? [Y/n] " reply
+      if [[ $reply == "n" || $reply == "N" ]]; then
+        choice="no"
+      fi
+    fi
+  fi
+  FONT_CHOICE="$choice"
 
-  if (( installed > 0 )); then
-    ok "Brand font '$family' is installed system-wide"
-  else
-    warn "Brand font '$family' is not installed; the shell will use the system font"
-    warn "  install it with: sudo install -Dm644 Nuuxfont-Regular.ttf /usr/share/fonts/NuuXFont/ && fc-cache -f"
+  local changed=0 count=0
+  local src dest
+  for entry in "${entries[@]}"; do
+    src="$(jq -r '.src' <<<"$entry")"
+    dest="$(expand_path "$(jq -r '.dest' <<<"$entry")")"
+    [[ -f $REPO_DIR/$src ]] || fail "manifest source missing: $src"
+
+    if [[ $choice == "no" ]]; then
+      # Only a file that is the shell's own copy is removed: one that
+      # differs was put there by someone else.
+      if [[ -f $dest ]] && cmp -s "$REPO_DIR/$src" "$dest"; then
+        if (( DRY_RUN )); then
+          printf '  would remove: %s\n' "$dest"
+        else
+          rm -f -- "$dest"
+        fi
+        changed=1
+      fi
+      continue
+    fi
+
+    count=$((count + 1))
+    if [[ -f $dest ]] && cmp -s "$REPO_DIR/$src" "$dest"; then
+      continue
+    fi
+    if (( DRY_RUN )); then
+      printf '  would install: %s\n' "$dest"
+      continue
+    fi
+    backup_file "$dest" "$REPO_DIR/$src"
+    mkdir -p "$(dirname "$dest")"
+    replace_file "$REPO_DIR/$src" "$dest"
+    changed=1
+  done
+
+  local dir
+  dir="$(dirname "$(expand_path "$(jq -r '.dest' <<<"${entries[0]}")")")"
+  if [[ $choice == "no" ]]; then
+    if (( changed && ! DRY_RUN )); then
+      rmdir "$dir" 2>/dev/null || true
+      fc-cache -f "$FONT_DIR" >/dev/null 2>&1 || true
+      info "Removed NooxFont; titles use the system font"
+    else
+      info "Skipping NooxFont; titles use the system font (install it with --font)"
+    fi
+    return 0
+  fi
+
+  # The shell reads the installed families when it starts, and the
+  # restart hook that follows starts it against the new cache.
+  if (( changed && ! DRY_RUN )); then
+    fc-cache -f "$dir" >/dev/null 2>&1 || warn "fc-cache failed; run: fc-cache -f"
+    ok "Installed NooxFont into $dir"
+  elif (( ! DRY_RUN )); then
+    ok "NooxFont is up to date"
   fi
 }
 
@@ -879,6 +958,7 @@ write_state() {
     --arg hypr_module "$(expand_path "$(manifest_get '.hypr.module.dest')")" \
     --arg hypr_require "$(expand_path "$(manifest_get '.hypr.require.file')")" \
     --arg omarchy_config "$OMARCHY_CONFIG" \
+    --arg font "$FONT_CHOICE" \
     '{
        name: $name,
        version: $version,
@@ -890,7 +970,8 @@ write_state() {
        config: $config,
        hypr_module: $hypr_module,
        hypr_require: $hypr_require,
-       omarchy_config: $omarchy_config
+       omarchy_config: $omarchy_config,
+       font: $font
      }' >"$STATE_DIR/state.json"
 
   ok "Wrote state to $STATE_DIR/state.json"
@@ -1052,6 +1133,17 @@ verify() {
     }
   done < <(manifest_list '.shims')
 
+  if [[ $FONT_CHOICE == "yes" ]]; then
+    while IFS= read -r entry; do
+      local dest
+      dest="$(expand_path "$(jq -r '.dest' <<<"$entry")")"
+      [[ -f $dest ]] || {
+        warn "missing: $dest"
+        failures=$((failures + 1))
+      }
+    done < <(manifest_list '.fonts')
+  fi
+
   (( failures == 0 )) || fail "$failures verification checks failed"
   ok "All manifest entries verified"
 }
@@ -1088,6 +1180,14 @@ main() {
         ;;
       --no-theme)
         THEME_CHOICE="no"
+        shift
+        ;;
+      --font)
+        FONT_CHOICE="yes"
+        shift
+        ;;
+      --no-font)
+        FONT_CHOICE="no"
         shift
         ;;
       -h | --help)
@@ -1133,7 +1233,7 @@ main() {
   install_files
   install_shims
   remove_retired_shims
-  check_brand_font
+  install_fonts
   install_hypr
   deconflict_hypr
   enable_app_blur

@@ -127,35 +127,47 @@ QtObject {
     readonly property int scoopCapOverhang: Math.ceil(Math.sqrt(Math.pow(scoopCapRadius + borderWidth, 2) - scoopCapRadius * scoopCapRadius) - borderWidth) + 1
     // Typography
     //
-    // The brand font is not bundled with the shell: it is a personal
-    // typeface that lives in the system font directory on the machines
-    // that have it. Resolve it at runtime from the installed families, so
-    // a machine without it falls back to the system font instead of
-    // rendering with a missing family.
-    readonly property string brandFontName: "Nuuxfont"
-    readonly property bool hasBrandFont: Qt.fontFamilies().indexOf(brandFontName) >= 0
-    readonly property string brandFont: hasBrandFont ? brandFontName : fontFamily
+    // NooxFont is the shell's typeface: the display face cut from the
+    // Nooxshell wordmark, shipped in fonts/ and installed by install.sh.
+    // Every island title and readout is set in it. The install can opt out
+    // of it, so it is looked up among the installed families, and a
+    // machine without it sets titles in the system font.
+    readonly property string displayFontName: "NooxFont"
+    readonly property bool hasDisplayFont: Qt.fontFamilies().indexOf(displayFontName) >= 0
+    readonly property string displayFont: hasDisplayFont ? displayFontName : fontFamily
+    // The note shown while a reminder rings is the one text set in another
+    // face: Nuuxfont, a personal typeface that is not distributed. Where it
+    // is not installed the note is set like every other title.
+    readonly property string noteFont: Qt.fontFamilies().indexOf("Nuuxfont") >= 0 ? "Nuuxfont" : displayFont
     // The system font: "monospace", which fontconfig resolves to the font
     // `omarchy font set` chose.
     readonly property string fontFamily: "monospace"
 
     // Island titles: the time, the Wi-Fi and Bluetooth names and the slider
-    // readouts, all set in brandFont. The monospace fallback is far wider
-    // and heavier than the brand face at the same pixel size, so it is set
-    // smaller and lighter to read at the same weight.
-    readonly property int titleSize: hasBrandFont ? 16 : 13
+    // readouts, all set in displayFont. The monospace fallback is heavier
+    // than NooxFont at the same pixel size, so it is set smaller and lighter
+    // to read at the same weight.
+    readonly property int titleSize: hasDisplayFont ? 16 : 13
     // The day name in the expanded time island.
-    readonly property int headlineSize: hasBrandFont ? 22 : 17
-    readonly property int titleWeight: hasBrandFont ? Font.Bold : Font.DemiBold
-    // Height of a capital at titleSize. The two faces sit at different
-    // heights inside their line boxes, so a title is aligned by its
-    // baseline, half a cap height below the centre it should sit on.
+    readonly property int headlineSize: hasDisplayFont ? 22 : 17
+    readonly property int titleWeight: hasDisplayFont ? Font.Bold : Font.DemiBold
+    // The battery, volume and brightness readouts. NooxFont's figures are
+    // wide (0.77 em each), so "100" only fits the 34px column of bars at 13.
+    readonly property int readoutSize: hasDisplayFont ? 13 : titleSize
+    // Height of a capital at titleSize. NooxFont and the fallback sit at
+    // different heights inside their line boxes, so a title is aligned by
+    // its baseline, half a cap height below the centre it should sit on.
     readonly property real titleCapHeight: titleCaps.tightBoundingRect.height
+    // Height of a title line. NooxFont's own line box is 1.2 em, to leave
+    // room for accents over capitals; a title is one line of capitals and
+    // figures, so it is given 0.9 em, which keeps the islands as compact
+    // as the face they were first drawn around.
+    readonly property real titleLineHeight: hasDisplayFont ? titleSize * 0.9 : titleCaps.height
     // Body height shared by the islands on the top edge (time, workspaces,
     // Wi-Fi, Bluetooth), so their bottom edges line up: one title line
     // padded by unit, plus the border. It excludes the scoop flares, which
     // the corner islands add below it along the screen edge.
-    readonly property int topIslandHeight: Math.ceil(titleCaps.height) + unit + borderWidth
+    readonly property int topIslandHeight: Math.ceil(titleLineHeight) + unit + borderWidth
     // The battery, volume and brightness panels share one height: four
     // bars of sideSegmentHeight, each with a gap, and one readout line,
     // plus the flares above and below (rounding + 2 * spacing each) and
@@ -165,10 +177,10 @@ QtObject {
     // the border on both, 48 at the default gaps. The column keeps its width
     // and the island grows with the border, as every other island does.
     readonly property int sidePanelWidth: 34 + spacing + 2 * borderWidth
-    readonly property int sidePanelHeight: 4 * (sideSegmentHeight + spacing / 2) + Math.ceil(titleCaps.height)
+    readonly property int sidePanelHeight: 4 * (sideSegmentHeight + spacing / 2) + Math.ceil(titleLineHeight)
         + 2 * (rounding + spacing * 2) + 2 * scoopCapOverhang
     property TextMetrics titleCaps: TextMetrics {
-        font.family: root.brandFont
+        font.family: root.displayFont
         font.pixelSize: root.titleSize
         font.weight: root.titleWeight
         text: "H"

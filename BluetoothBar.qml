@@ -848,7 +848,7 @@ Scope {
                                     return "Bluetooth"
                                 }
                                 color: root.hasConnection ? Theme.brand : (root.adapter && root.adapter.enabled ? Theme.lightForeground : Theme.darkForeground)
-                                font.family: Theme.brandFont
+                                font.family: Theme.displayFont
                                 font.pixelSize: Theme.titleSize
                                 font.weight: Theme.titleWeight
                                 font.capitalization: Font.AllUppercase

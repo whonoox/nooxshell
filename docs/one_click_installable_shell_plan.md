@@ -172,33 +172,35 @@ import Quickshell
 help with font-cache problems and is not needed here.
 
 The root file needs no `import QtQuick`: `Scope` comes from Quickshell, and
-the shell does not load fonts itself — the brand font is resolved through
+the shell does not load fonts itself — NooxFont is resolved through
 fontconfig (see §2.5).
 
 ### 2.5 Font family
 
-`fc-query` reports the family as `Nuuxfont` (not `NuuXFont`). `Theme.qml`
-uses `"Nuuxfont"`, which matches.
+The shell's typeface is NooxFont; `fc-query` reports its family as
+`NooxFont`, which is what `Theme.qml` asks for.
 
-The brand font is **not distributed with the shell**. It is a personal
-typeface, and the repository is public, so the font file is not committed
-and the installer does not deploy it. Instead:
+It is **distributed with the shell**: `fonts/NooxFont-Regular.ttf` and its
+license, `fonts/OFL.txt` (SIL Open Font License 1.1, copyright Noox). The
+manifest lists both under `fonts`, and:
 
-- The font is expected to be installed system-wide on the machines that
-  have it, where fontconfig makes it visible to every application. On
-  this system it lives in `/usr/share/fonts/NuuXFont/`.
+- The installer copies them to `~/.local/share/fonts/nooxshell/`, a
+  directory of their own so the uninstaller removes exactly what was put
+  there, and runs `fc-cache` on it. The restart hook that follows starts
+  the shell against the new cache.
+- It is opt-out. The prompt defaults to yes; `--yes`, or a run without a
+  terminal, takes the default; `--font` and `--no-font` answer it. The
+  answer is recorded as `font` in `state.json`, so `nooxshell update`
+  refreshes the font without asking and never reinstalls one the user
+  declined. An install from before the font shipped has no answer and is
+  asked once. `--no-font` also removes a copy an earlier install put there.
 - `Theme.qml` resolves the family at runtime from `Qt.fontFamilies()` and
-  falls back to the system font when it is absent, so a machine without
-  the font renders correctly instead of with a missing family.
-- The installer checks for the font and prints how to install it if it is
-  missing. This is a warning, not an error.
+  falls back to the system font when it is absent, so an install that
+  opted out renders correctly.
 
-To install it on another machine:
-
-```bash
-sudo install -Dm644 Nuuxfont-Regular.ttf /usr/share/fonts/NuuXFont/
-fc-cache -f
-```
+The font is built from its own sources outside this repository; a rebuilt
+`NooxFont-Regular.ttf` is copied into `fonts/` and ships with the next
+update.
 
 `QS_DROP_EXPENSIVE_FONTS` only excludes `woff`/`woff2` files and is not
 needed here.

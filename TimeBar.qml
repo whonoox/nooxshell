@@ -448,7 +448,7 @@ Scope {
                             anchors.baselineOffset: Theme.titleCapHeight / 2 - Theme.borderWidth / 2
                             text: root.time
                             color: Theme.brand
-                            font.family: Theme.brandFont
+                            font.family: Theme.displayFont
                             font.pixelSize: Theme.titleSize
                             font.weight: Theme.titleWeight
                             font.capitalization: Font.AllUppercase
@@ -618,7 +618,7 @@ Scope {
                             horizontalAlignment: Text.AlignHCenter
                             wrapMode: Text.Wrap
                             color: Theme.lightForeground
-                            font.family: Theme.brandFont
+                            font.family: Theme.displayFont
                             font.pixelSize: 11
                             font.weight: Theme.titleWeight
                             font.capitalization: Font.AllUppercase
@@ -635,7 +635,8 @@ Scope {
                             horizontalAlignment: Text.AlignHCenter
                             wrapMode: Text.Wrap
                             color: root.ringing ? Theme.brand : Theme.foreground
-                            font.family: root.ringing ? Theme.brandFont : Theme.fontFamily
+                            // A ringing reminder's note is set in its own face (Theme.noteFont).
+                            font.family: root.ringing ? Theme.noteFont : Theme.fontFamily
                             font.pixelSize: root.ringing ? Theme.titleSize : 13
                             font.weight: root.ringing ? Theme.titleWeight : Font.Normal
                         }
@@ -679,7 +680,7 @@ Scope {
                             textFormat: Text.PlainText
                             horizontalAlignment: Text.AlignHCenter
                             color: root.inputError ? Theme.urgent : Theme.lightForeground
-                            font.family: Theme.brandFont
+                            font.family: Theme.displayFont
                             font.pixelSize: 11
                             font.weight: Theme.titleWeight
                             font.capitalization: Font.AllUppercase
@@ -764,7 +765,7 @@ Scope {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.day
                             color: Theme.lightForeground
-                            font.family: Theme.brandFont
+                            font.family: Theme.displayFont
                             font.pixelSize: Theme.headlineSize
                             font.weight: Theme.titleWeight
                             font.capitalization: Font.AllUppercase
@@ -776,7 +777,7 @@ Scope {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.date
                             color: Theme.brand
-                            font.family: Theme.brandFont
+                            font.family: Theme.displayFont
                             font.pixelSize: Theme.titleSize
                             font.weight: Theme.titleWeight
                             font.capitalization: Font.AllUppercase

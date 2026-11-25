@@ -56,7 +56,15 @@ Options:
 ./install.sh --yes        # accept defaults
 ./install.sh --theme      # also install the Nooxnpaints theme, no prompt
 ./install.sh --no-theme   # do not offer the theme
+./install.sh --font       # install NooxFont without asking
+./install.sh --no-font    # leave NooxFont out (and remove it if installed)
 ```
+
+The installer also installs [NooxFont](#fonts), the shell's typeface. It
+is opt-out: the prompt defaults to yes, and `--yes` takes that default.
+The answer is remembered, so `nooxshell update` keeps the font current
+without asking again and never brings it back if you said no. An install
+from before the font shipped is asked once, on its next update.
 
 At the end, the installer offers the companion
 [Nooxnpaints theme](https://github.com/whonoox/omarchy-nooxnpaints-theme),
@@ -203,21 +211,26 @@ hypr/                         Hyprland bindings, layer rules, autostart
 shims/                        command interceptors for ~/.local/bin
 *.qml, *.js                   the shell
 decorations/                  vector assets
+fonts/                        NooxFont and its license
 ```
 
-## Brand font
+## Fonts
 
-The shell asks for the `Nuuxfont` family by name. The font is not bundled
-here — it is a personal typeface, and this repository is public. Install it
-system-wide on any machine that should use it:
+The shell's typeface is **NooxFont**, the display face cut from the
+Nooxshell wordmark: every glyph is a rounded block with bites taken out of
+it, on the grid of the Nooxshell icon. Every island title and readout is
+set in it.
 
-```bash
-sudo install -Dm644 Nuuxfont-Regular.ttf /usr/share/fonts/NuuXFont/
-fc-cache -f
-```
+It ships in [`fonts/`](fonts) and the installer puts it in
+`~/.local/share/fonts/nooxshell/` (see [Install](#install) for opting
+out); the uninstaller removes it. Without it the titles use the system
+font and everything still works. `nooxshell doctor` reports which one is
+in use.
 
-Without it the shell falls back to the system font and everything still
-works; `nooxshell doctor` reports which font is in use.
+NooxFont was made by Noox, for Nooxshell first, and is free for anyone to
+use: it is licensed under the
+[SIL Open Font License 1.1](fonts/OFL.txt). You may use it in anything,
+embed it, modify it and share it; you may not sell the font on its own.
 
 ## Documentation
 

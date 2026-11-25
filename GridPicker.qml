@@ -548,7 +548,7 @@ Scope {
                 anchors.bottomMargin: 26 * root.ui
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: root.selectedName.toUpperCase()
-                font.family: Theme.brandFont
+                font.family: Theme.displayFont
                 font.pixelSize: Math.max(1, Math.round(13 * root.ui))
                 font.bold: true
                 font.letterSpacing: 2 * root.ui

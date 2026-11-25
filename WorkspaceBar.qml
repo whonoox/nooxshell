@@ -663,7 +663,7 @@ Scope {
                                                 anchors.centerIn: parent
                                                 text: String(modelData.id === 10 ? "0" : modelData.id)
                                                 color: Theme.brand
-                                                font.family: Theme.brandFont
+                                                font.family: Theme.displayFont
                                                 font.pixelSize: 13
                                                 font.weight: Font.Bold
                                                 font.capitalization: Font.AllUppercase
@@ -685,7 +685,7 @@ Scope {
                                             anchors.centerIn: parent
                                             text: String(modelData.count)
                                             color: Theme.lightForeground
-                                            font.family: Theme.brandFont
+                                            font.family: Theme.displayFont
                                             font.pixelSize: 13
                                             font.weight: Font.Bold
                                             font.capitalization: Font.AllUppercase

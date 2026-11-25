@@ -1184,7 +1184,7 @@ Scope {
                                     if (root.hasConnection) return Theme.brand
                                     return Theme.darkForeground
                                 }
-                                font.family: Theme.brandFont
+                                font.family: Theme.displayFont
                                 font.pixelSize: Theme.titleSize
                                 font.weight: Theme.titleWeight
                                 font.capitalization: Font.AllUppercase

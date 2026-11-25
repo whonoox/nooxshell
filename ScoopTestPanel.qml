@@ -122,7 +122,7 @@ Scope {
                         anchors.verticalCenterOffset: -root.customRadius / 2
                         text: "top left"
                         color: root.textColor
-                        font.family: Theme.brandFont
+                        font.family: Theme.displayFont
                         font.pixelSize: 14
                         font.weight: Font.Bold
                         font.capitalization: Font.AllUppercase
@@ -147,7 +147,7 @@ Scope {
                         anchors.verticalCenterOffset: -root.customRadius / 4
                         text: "top center"
                         color: root.textColor
-                        font.family: Theme.brandFont
+                        font.family: Theme.displayFont
                         font.pixelSize: 14
                         font.weight: Font.Bold
                         font.capitalization: Font.AllUppercase
@@ -174,7 +174,7 @@ Scope {
                         anchors.verticalCenterOffset: -root.customRadius / 2
                         text: "top right"
                         color: root.textColor
-                        font.family: Theme.brandFont
+                        font.family: Theme.displayFont
                         font.pixelSize: 14
                         font.weight: Font.Bold
                         font.capitalization: Font.AllUppercase
@@ -200,7 +200,7 @@ Scope {
                         text: "center\nright"
                         horizontalAlignment: Text.AlignHCenter
                         color: root.textColor
-                        font.family: Theme.brandFont
+                        font.family: Theme.displayFont
                         font.pixelSize: 13
                         font.weight: Font.Bold
                         font.capitalization: Font.AllUppercase
@@ -227,7 +227,7 @@ Scope {
                         anchors.verticalCenterOffset: root.customRadius / 2
                         text: "bottom right"
                         color: root.textColor
-                        font.family: Theme.brandFont
+                        font.family: Theme.displayFont
                         font.pixelSize: 14
                         font.weight: Font.Bold
                         font.capitalization: Font.AllUppercase
@@ -252,7 +252,7 @@ Scope {
                         anchors.verticalCenterOffset: root.customRadius / 4
                         text: "bottom center"
                         color: root.textColor
-                        font.family: Theme.brandFont
+                        font.family: Theme.displayFont
                         font.pixelSize: 14
                         font.weight: Font.Bold
                         font.capitalization: Font.AllUppercase
@@ -279,7 +279,7 @@ Scope {
                         anchors.verticalCenterOffset: root.customRadius / 2
                         text: "bottom left"
                         color: root.textColor
-                        font.family: Theme.brandFont
+                        font.family: Theme.displayFont
                         font.pixelSize: 14
                         font.weight: Font.Bold
                         font.capitalization: Font.AllUppercase
@@ -305,7 +305,7 @@ Scope {
                         text: "center\nleft"
                         horizontalAlignment: Text.AlignHCenter
                         color: root.textColor
-                        font.family: Theme.brandFont
+                        font.family: Theme.displayFont
                         font.pixelSize: 13
                         font.weight: Font.Bold
                         font.capitalization: Font.AllUppercase
@@ -338,7 +338,7 @@ Scope {
                                 Text {
                                     text: "Scoop V2 Inspector"
                                     color: Theme.brightForeground
-                                    font.family: Theme.brandFont
+                                    font.family: Theme.displayFont
                                     font.pixelSize: 18
                                     font.weight: Font.Bold
                                     font.capitalization: Font.AllUppercase
@@ -419,7 +419,7 @@ Scope {
                                         anchors.centerIn: parent
                                         text: modelData.label
                                         color: String(root.previewColor).toLowerCase() === String(modelData.val).toLowerCase() ? Theme.darkerBackground : Theme.brightForeground
-                                        font.family: Theme.brandFont
+                                        font.family: Theme.displayFont
                                         font.pixelSize: 11
                                         font.weight: Font.Bold
                                         font.capitalization: Font.AllUppercase
@@ -462,7 +462,7 @@ Scope {
                                         anchors.centerIn: parent
                                         text: modelData + "px"
                                         color: root.customRadius === modelData ? Theme.darkerBackground : Theme.brightForeground
-                                        font.family: Theme.brandFont
+                                        font.family: Theme.displayFont
                                         font.pixelSize: 11
                                         font.weight: Font.Bold
                                         font.capitalization: Font.AllUppercase
@@ -481,7 +481,7 @@ Scope {
                             Text {
                                 text: "r=" + root.customRadius + "px (minH=" + (3 * root.customRadius) + "px)"
                                 color: Theme.brand
-                                font.family: Theme.brandFont
+                                font.family: Theme.displayFont
                                 font.pixelSize: 11
                                 font.weight: Font.Bold
                                 font.capitalization: Font.AllUppercase
@@ -509,7 +509,7 @@ Scope {
                             Text {
                                 text: String(root.hPanelWidth) + "px"
                                 color: Theme.brightForeground
-                                font.family: Theme.brandFont
+                                font.family: Theme.displayFont
                                 font.pixelSize: 11
                                 font.weight: Font.Bold
                                 font.capitalization: Font.AllUppercase
@@ -539,7 +539,7 @@ Scope {
                             Text {
                                 text: String(root.hPanelHeight) + "px"
                                 color: Theme.brightForeground
-                                font.family: Theme.brandFont
+                                font.family: Theme.displayFont
                                 font.pixelSize: 11
                                 font.weight: Font.Bold
                                 font.capitalization: Font.AllUppercase

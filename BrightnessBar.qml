@@ -243,8 +243,8 @@ Scope {
                     Text {
                         text: String(Math.round(Math.min(1, root.brightness) * 100))
                         color: Theme.brand
-                        font.family: Theme.brandFont
-                        font.pixelSize: Theme.titleSize
+                        font.family: Theme.displayFont
+                        font.pixelSize: Theme.readoutSize
                         font.weight: Theme.titleWeight
                         font.capitalization: Font.AllUppercase
                     }
