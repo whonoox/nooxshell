@@ -828,6 +828,37 @@ enable_app_blur() {
   fi
 }
 
+# The toggles island shows the input language and pops up when it changes,
+# so Fcitx's own box by the text cursor ("sera (M17N)") is turned off:
+# ShowInputMethodInformation in its global config. Fcitx is told to read the
+# file again, so it takes effect at once. Without Fcitx this does nothing.
+quiet_fcitx_popup() {
+  command -v fcitx5 >/dev/null 2>&1 || return 0
+  local config="$HOME_DIR/.config/fcitx5/config"
+  local key="ShowInputMethodInformation"
+
+  if [[ -f $config ]] && grep -qE "^[[:space:]]*$key[[:space:]]*=[[:space:]]*False[[:space:]]*$" "$config"; then
+    return 0
+  fi
+  if (( DRY_RUN )); then
+    printf '  would set %s=False in: %s\n' "$key" "$config"
+    return 0
+  fi
+
+  backup_file "$config"
+  mkdir -p "$(dirname "$config")"
+  [[ -e $config ]] || : >"$config"
+  if grep -qE "^[[:space:]]*$key[[:space:]]*=" "$config"; then
+    sed -i -E "s/^[[:space:]]*$key[[:space:]]*=.*/$key=False/" "$config"
+  elif grep -qE '^\[Behavior\][[:space:]]*$' "$config"; then
+    sed -i -E "/^\[Behavior\][[:space:]]*$/a $key=False" "$config"
+  else
+    printf '\n[Behavior]\n%s=False\n' "$key" >>"$config"
+  fi
+  pgrep -x fcitx5 >/dev/null 2>&1 && { fcitx5-remote -r >/dev/null 2>&1 || true; }
+  ok "Fcitx's input method popup is off; the toggles island shows the language"
+}
+
 # Suppresses the stock Omarchy bar and popups by disabling the plugins our
 # shell replaces, and re-enables the ones an earlier version disabled but
 # this one relies on (the background plugin, which draws the wallpaper and
@@ -1358,6 +1389,7 @@ main() {
   deconflict_hypr
   enable_app_blur
   configure_omarchy
+  quiet_fcitx_popup
   install_dell_fnlock
   install_cli
   check_path_order

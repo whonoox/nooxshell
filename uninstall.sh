@@ -420,6 +420,25 @@ remove_dell_fnlock() {
   ok "Removed $conf"
 }
 
+# The installer turned off Fcitx's own input method popup (see
+# quiet_fcitx_popup in install.sh). A config restored from the pristine
+# backup already has the user's setting; otherwise put back Fcitx's default.
+restore_fcitx_popup() {
+  local relative=".config/fcitx5/config"
+  local config="$HOME/$relative"
+  local key="ShowInputMethodInformation"
+  [[ " $BACKED_UP_FILES " != *" $relative "* ]] || return 0
+  [[ -f $config ]] && grep -qE "^[[:space:]]*$key[[:space:]]*=[[:space:]]*False" "$config" || return 0
+
+  if (( DRY_RUN )); then
+    printf '  would set %s=True in: %s\n' "$key" "$config"
+    return 0
+  fi
+  sed -i -E "s/^[[:space:]]*$key[[:space:]]*=.*/$key=True/" "$config"
+  pgrep -x fcitx5 >/dev/null 2>&1 && { fcitx5-remote -r >/dev/null 2>&1 || true; }
+  ok "Fcitx's input method popup is back on"
+}
+
 revive_stock_shell() {
   info "Restarting the stock Omarchy shell"
   run hyprctl reload || warn "hyprctl reload failed"
@@ -481,6 +500,7 @@ main() {
   remove_app_blur
   report_omarchy_config
   remove_dell_fnlock
+  restore_fcitx_popup
 
   if (( ! DRY_RUN )); then
     rm -rf "$STATE_DIR"
