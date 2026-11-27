@@ -287,6 +287,57 @@ QtObject {
     }
 
     // ------------------------------------------------------------------
+    // Caps Lock State
+    // ------------------------------------------------------------------
+    // Read from the keyboard's caps lock LED in sysfs, which the kernel
+    // keeps in step with the lock even on keys whose light does not work.
+    // It is only shown, not set: the lock belongs to the keyboard, and a key
+    // pressed through a Wayland virtual keyboard (wtype) has a lock of its
+    // own that the real one never sees. Hyprland sets every keyboard's LED
+    // alike, so the first LED found does. When it goes away (a keyboard
+    // unplugged), another is looked for.
+    property string capsLockLedPath: ""
+    property bool capsLock: false
+    readonly property bool capsLockAvailable: capsLockLedPath !== ""
+
+    function findCapsLock() {
+        if (!findCapsLockProcess.running) findCapsLockProcess.running = true
+    }
+
+    property Process findCapsLockProcess: Process {
+        command: ["sh", "-c", "for f in /sys/class/leds/*::capslock/brightness; do [ -e \"$f\" ] && { echo \"$f\"; break; }; done"]
+        stdout: StdioCollector {
+            onStreamFinished: root.capsLockLedPath = text.trim()
+        }
+    }
+
+    property FileView capsLockFile: FileView {
+        path: root.capsLockLedPath
+        printErrors: false
+        onLoaded: root.capsLock = text().trim() === "1"
+        onLoadFailed: {
+            root.capsLockLedPath = ""
+            root.capsLock = false
+        }
+    }
+
+    // A sysfs file sends no change notice, so it is read again five times a
+    // second: Caps Lock is pressed often and its state should show at once.
+    property Timer capsLockPollTimer: Timer {
+        interval: 200
+        running: root.capsLockAvailable
+        repeat: true
+        onTriggered: root.capsLockFile.reload()
+    }
+
+    property Timer capsLockFindTimer: Timer {
+        interval: 5000
+        running: !root.capsLockAvailable
+        repeat: true
+        onTriggered: root.findCapsLock()
+    }
+
+    // ------------------------------------------------------------------
     // Airplane Mode State
     // ------------------------------------------------------------------
     property bool airplaneMode: false
@@ -406,6 +457,7 @@ QtObject {
         root.refreshMic()
         root.refreshStayAwake()
         root.refreshFnLock()
+        root.findCapsLock()
         root.refreshAirplane()
         root.refreshNightLight()
     }

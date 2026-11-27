@@ -110,6 +110,11 @@ Scope {
                 root.reveal("fnlock")
             }
         }
+        function onCapsLockChanged() {
+            if (root._initialized) {
+                root.reveal("capslock")
+            }
+        }
         function onAirplaneModeChanged() {
             if (root._initialized) {
                 root.reveal("airplane")
@@ -303,6 +308,10 @@ Scope {
             return ToggleState.stayAwake ? "awake_on" : "awake_off"
         }
 
+        function capsLockStatus(): string {
+            return ToggleState.capsLock ? "capslock_on" : "capslock_off"
+        }
+
         function fnLockStatus(): string {
             return ToggleState.fnLock ? "fnlock_on" : "fnlock_off"
         }
@@ -327,6 +336,8 @@ Scope {
                 stayAwake: ToggleState.stayAwake,
                 fnLock: ToggleState.fnLock,
                 fnLockAvailable: ToggleState.fnLockAvailable,
+                capsLock: ToggleState.capsLock,
+                capsLockAvailable: ToggleState.capsLockAvailable,
                 airplaneMode: ToggleState.airplaneMode,
                 nightLight: ToggleState.nightLight,
                 keySounds: ToggleState.keySounds,
@@ -695,7 +706,47 @@ Scope {
                             }
                         }
 
-                        // 6. Airplane Mode Toggle (No button background, no border)
+                        // 6. Caps Lock indicator. It only shows the lock, which
+                        // the shell cannot set (see ToggleState), and pops the
+                        // island up when it changes, for keys without a light.
+                        Item {
+                            id: capsLockButton
+                            width: 24
+                            height: 24
+                            visible: ToggleState.capsLockAvailable
+
+                            readonly property bool isCapsLock: ToggleState.capsLock
+                            readonly property bool isTriggered: root.lastTriggered === "capslock"
+                            readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
+
+                            scale: isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9)
+                            opacity: isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85)
+
+                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                            Image {
+                                id: capsLockRawIcon
+                                anchors.centerIn: parent
+                                width: 16
+                                height: 16
+                                sourceSize.width: 32
+                                sourceSize.height: 32
+                                source: "decorations/capslock.svg"
+                                fillMode: Image.PreserveAspectFit
+                                visible: false
+                            }
+
+                            MultiEffect {
+                                anchors.fill: capsLockRawIcon
+                                source: capsLockRawIcon
+                                colorization: 1.0
+                                colorizationColor: capsLockButton.isCapsLock ? Theme.brand : Theme.darkForeground
+                                Behavior on colorizationColor { ColorAnimation { duration: 150 } }
+                            }
+                        }
+
+                        // 7. Airplane Mode Toggle (No button background, no border)
                         Item {
                             id: airplaneButton
                             width: 24
@@ -743,7 +794,7 @@ Scope {
                             }
                         }
 
-                        // 7. Night Light Toggle (No button background, no border)
+                        // 8. Night Light Toggle (No button background, no border)
                         Item {
                             id: nightLightButton
                             width: 24
@@ -791,7 +842,7 @@ Scope {
                             }
                         }
 
-                        // 8. Key Sounds Toggle (No button background, no border)
+                        // 9. Key Sounds Toggle (No button background, no border)
                         Item {
                             id: keysButton
                             width: 24

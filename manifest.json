@@ -112,6 +112,7 @@
     { "src": "decorations/cursor.svg", "dest": "~/.config/quickshell/decorations/cursor.svg" },
     { "src": "decorations/cursor-fill.svg", "dest": "~/.config/quickshell/decorations/cursor-fill.svg" },
     { "src": "decorations/function.svg", "dest": "~/.config/quickshell/decorations/function.svg" },
+    { "src": "decorations/capslock.svg", "dest": "~/.config/quickshell/decorations/capslock.svg" },
     { "src": "decorations/gauge.svg", "dest": "~/.config/quickshell/decorations/gauge.svg" },
     { "src": "decorations/keyboard.svg", "dest": "~/.config/quickshell/decorations/keyboard.svg" },
     { "src": "decorations/lightning-fill-red.svg", "dest": "~/.config/quickshell/decorations/lightning-fill-red.svg" },
