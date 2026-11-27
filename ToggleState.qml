@@ -229,17 +229,29 @@ QtObject {
     // ------------------------------------------------------------------
     // Fn Lock State
     // ------------------------------------------------------------------
+    // The lock is read from one of two places:
+    //   "led"   Lenovo IdeaPads: ideapad_laptop's platform::fnlock LED, which
+    //           the shell reads every second and can set.
+    //   "dell"  Dell laptops: the BIOS's FnLockMode setting, read once at
+    //           startup, then followed through the kernel log as Fn+Esc is
+    //           pressed. Each read is a call into the BIOS, so it is not
+    //           polled, and the shell cannot set it. Both need the system
+    //           file install.sh adds on Dells (system/nooxshell-dell-fnlock.conf).
+    // fnLockAvailable is true while the lock's state is known.
     readonly property string fnLockLedPath: "/sys/class/leds/platform::fnlock/brightness"
+    property string fnLockSource: "led"
+    readonly property bool fnLockSettable: fnLockSource === "led"
     property bool fnLock: false
     property bool fnLockAvailable: true
 
     function refreshFnLock() {
-        if (!probeFnLockProcess.running) {
+        if (root.fnLockSource === "led" && !probeFnLockProcess.running) {
             probeFnLockProcess.running = true
         }
     }
 
     function toggleFnLock() {
+        if (!root.fnLockSettable) return
         Quickshell.execDetached([
             "bash", "-c",
             "val=$(cat /sys/class/leds/platform::fnlock/brightness 2>/dev/null || echo 0); if [ \"$val\" = \"1\" ]; then brightnessctl -q -d platform::fnlock set 0; else brightnessctl -q -d platform::fnlock set 1; fi"
@@ -249,6 +261,7 @@ QtObject {
     }
 
     function setFnLock(val) {
+        if (!root.fnLockSettable) return
         var target = val ? "1" : "0"
         Quickshell.execDetached([
             "bash", "-c",
@@ -274,16 +287,72 @@ QtObject {
         }
         onExited: function(exitCode) {
             if (exitCode !== 0) {
+                // No IdeaPad LED: try the Dell BIOS setting instead.
                 root.fnLockAvailable = false
+                root.fnLockSource = ""
+                findDellFnLockProcess.running = true
             }
         }
     }
 
     property Timer fnLockPollTimer: Timer {
         interval: 1000
-        running: root.fnLockAvailable
+        running: root.fnLockSource === "led" && root.fnLockAvailable
         repeat: true
         onTriggered: root.refreshFnLock()
+    }
+
+    // Dell: FnLockMode is "DisableStandard" while Fn lock is on (F1-F12 by
+    // default, as with the IdeaPad's lit LED) and "EnableSecondary" while
+    // the media keys are. Prints "unknown" when the file is there but not
+    // readable, as before the system file is installed: the lock is then
+    // known from the first Fn+Esc on.
+    function applyDellFnLockMode(mode) {
+        if (mode === "DisableStandard" || mode === "EnableSecondary") {
+            // The state comes before availability, so this first reading
+            // does not pop the island up (ToggleBar reveals only changes
+            // to a lock already known).
+            root.fnLock = mode === "DisableStandard"
+            root.fnLockAvailable = true
+        }
+    }
+
+    property Process findDellFnLockProcess: Process {
+        command: ["sh", "-c", "for f in /sys/class/firmware-attributes/*/attributes/FnLockMode/current_value; do [ -e \"$f\" ] || continue; cat \"$f\" 2>/dev/null || echo unknown; exit 0; done"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var mode = text.trim()
+                if (!mode) return
+                root.fnLockSource = "dell"
+                root.applyDellFnLockMode(mode)
+                dellFnLockFollower.running = true
+            }
+        }
+    }
+
+    // Each Fn+Esc logs "dell_wmi: Received WMI event (02 00 12 00 35 e0 XX
+    // ...)": event type 0x0012, code 0xe035, with XX 00 for Fn lock on and
+    // 01 for off. The kernel log is readable by the wheel group, which
+    // Omarchy's user is in.
+    readonly property var dellFnLockEvent: /dell_wmi: Received WMI event \([0-9a-f]{2} [0-9a-f]{2} 12 00 35 e0 ([0-9a-f]{2})/
+
+    property Process dellFnLockFollower: Process {
+        command: ["journalctl", "--dmesg", "--follow", "--lines=0", "--output=cat"]
+        stdout: SplitParser {
+            onRead: function(line) {
+                var match = root.dellFnLockEvent.exec(String(line || ""))
+                if (!match) return
+                root.fnLockAvailable = true
+                root.fnLock = match[1] === "00"
+            }
+        }
+        // journalctl should run for the session; if it stops, start it again.
+        onExited: dellFnLockRestartTimer.restart()
+    }
+
+    property Timer dellFnLockRestartTimer: Timer {
+        interval: 5000
+        onTriggered: if (root.fnLockSource === "dell") root.dellFnLockFollower.running = true
     }
 
     // ------------------------------------------------------------------

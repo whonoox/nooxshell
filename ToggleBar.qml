@@ -106,7 +106,7 @@ Scope {
             }
         }
         function onFnLockChanged() {
-            if (root._initialized) {
+            if (root._initialized && ToggleState.fnLockAvailable) {
                 root.reveal("fnlock")
             }
         }
@@ -336,6 +336,7 @@ Scope {
                 stayAwake: ToggleState.stayAwake,
                 fnLock: ToggleState.fnLock,
                 fnLockAvailable: ToggleState.fnLockAvailable,
+                fnLockSource: ToggleState.fnLockSource,
                 capsLock: ToggleState.capsLock,
                 capsLockAvailable: ToggleState.capsLockAvailable,
                 airplaneMode: ToggleState.airplaneMode,
@@ -700,6 +701,8 @@ Scope {
                             MouseArea {
                                 id: fnLockMouse
                                 anchors.fill: parent
+                                // A Dell's Fn lock can only be shown; Fn+Esc sets it.
+                                enabled: ToggleState.fnLockSettable
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: root.toggleFnLock()

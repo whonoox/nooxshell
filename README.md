@@ -139,6 +139,21 @@ which windows move together.
 The dots stay away from a workspace with a fullscreen window, a special
 workspace on top, or a tabbed window group.
 
+## Fn lock and Caps Lock
+
+The toggle island shows Caps Lock and, on laptops where the shell can read
+it, the Fn lock, and pops up when either changes, for keyboards without a
+light for them. On Lenovo IdeaPads the Fn button also sets the lock.
+
+A Dell keeps its Fn lock (Fn+Esc) in the BIOS, where only root can read it.
+On a Dell the installer offers to add `/etc/modprobe.d/nooxshell-dell-fnlock.conf`
+with sudo, which lets the shell read it and see Fn+Esc presses in the kernel
+log ([system/nooxshell-dell-fnlock.conf](system/nooxshell-dell-fnlock.conf)
+explains each line). The island then shows the lock but cannot set it.
+Without the file there is no Fn button on a Dell. Your answer is kept, so
+updates don't ask again; `./install.sh --fn-lock` adds the file later, and
+`./install.sh --no-fn-lock` takes it out. `./uninstall.sh` removes it too.
+
 ## Key sounds
 
 `Super+Alt+K`, or the keyboard button in the toggle island, plays a
@@ -209,6 +224,7 @@ config.toml                   user settings (rounding, gaps, app grid, hide dela
 bin/nooxshell           management CLI
 hypr/                         Hyprland bindings, layer rules, autostart
 shims/                        command interceptors for ~/.local/bin
+system/                       the one system file, added on Dells only
 *.qml, *.js                   the shell
 decorations/                  vector assets
 fonts/                        NooxFont and its license

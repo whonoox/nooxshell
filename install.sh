@@ -10,6 +10,8 @@
 #   ./install.sh --theme         also install the Nooxnpaints theme, no prompt
 #   ./install.sh --no-theme      do not offer the theme
 #   ./install.sh --no-font       do not install NooxFont (or remove it)
+#   ./install.sh --fn-lock       on a Dell, show the Fn lock (adds a system file)
+#   ./install.sh --no-fn-lock    on a Dell, do not (or remove that file)
 #
 # One-liner install:
 #   bash <(curl -fsSL https://github.com/whonoox/nooxshell/raw/master/install.sh)
@@ -31,6 +33,8 @@ BIN_DIR="$HOME_DIR/.local/bin"
 FONT_DIR="$HOME_DIR/.local/share/fonts"
 STATE_DIR="$HOME_DIR/.local/state/nooxshell"
 OMARCHY_CONFIG="$HOME_DIR/.config/omarchy/shell.json"
+# System file for Dell laptops; see install_dell_fnlock.
+DELL_FNLOCK_CONF="/etc/modprobe.d/nooxshell-dell-fnlock.conf"
 
 DRY_RUN=0
 ASSUME_YES=0
@@ -42,6 +46,9 @@ THEME_CHOICE=""
 # "yes" installs it, "no" skips it and removes a copy an earlier install
 # put there.
 FONT_CHOICE=""
+# The Dell Fn lock file: "" follows the last install's answer, or asks;
+# "yes" adds it, "no" skips it and removes a copy an earlier install added.
+FNLOCK_CHOICE=""
 
 # Per-run backup of everything touched, plus a one-time pristine copy of the
 # files that existed before the first install.
@@ -132,6 +139,10 @@ Options:
   --font        install NooxFont, the shell's typeface, without asking
   --no-font     do not install NooxFont; removes it if an earlier
                 install added it (titles use the system font)
+  --fn-lock     on a Dell, let the toggles island show the Fn lock
+                (adds a file to /etc/modprobe.d with sudo), no prompt
+  --no-fn-lock  on a Dell, do not; removes that file if an earlier
+                install added it
   -h, --help    show this help
 
 One-liner install:
@@ -871,6 +882,105 @@ configure_omarchy() {
   warn "omarchy-shell-config helper not found; skipping shell.json update"
 }
 
+# Dell laptops keep the Fn lock (Fn+Esc) in the BIOS, readable only by root,
+# and report a change only as a kernel debug message. Most have no light for
+# it. A modprobe file opens both up so the toggles island can show the lock;
+# system/nooxshell-dell-fnlock.conf says how. It is a system file, so it asks
+# first and needs sudo. Other machines skip this.
+#
+# The answer is recorded in state.json, so an update never asks again or
+# brings back a file the user declined. --fn-lock and --no-fn-lock override
+# it; --no-fn-lock also removes the file an earlier install added.
+install_dell_fnlock() {
+  local recorded=""
+  if [[ -f $STATE_DIR/state.json ]]; then
+    recorded="$(jq -r '.dell_fn_lock // empty' "$STATE_DIR/state.json" 2>/dev/null || true)"
+  fi
+  local choice="${FNLOCK_CHOICE:-$recorded}"
+  # Kept as it is on other machines, so the answer survives their installs.
+  FNLOCK_CHOICE="$choice"
+
+  local value
+  value="$(compgen -G '/sys/class/firmware-attributes/*/attributes/FnLockMode/current_value' | head -n 1)" || true
+  [[ -n $value ]] || return 0
+
+  if [[ $choice == "no" ]]; then
+    [[ -e $DELL_FNLOCK_CONF ]] && remove_dell_fnlock "$value"
+    info "Skipping the Dell Fn lock (set it up with --fn-lock)"
+    return 0
+  fi
+
+  local src="$REPO_DIR/system/nooxshell-dell-fnlock.conf"
+  [[ -f $src ]] || return 0
+  if cmp -s "$src" "$DELL_FNLOCK_CONF" && [[ -r $value ]]; then
+    FNLOCK_CHOICE="yes"
+    ok "Dell Fn lock is visible to the shell"
+    return 0
+  fi
+
+  if [[ -z $choice ]]; then
+    info "This Dell keeps its Fn lock in the BIOS, where only root can read it"
+    if (( ASSUME_YES || DRY_RUN )); then
+      choice="yes"
+    elif [[ ! -t 0 ]]; then
+      # Nothing to ask on: leave the question for an install in a terminal.
+      warn "No terminal to ask on; the Dell Fn lock is left for the next install"
+      return 0
+    else
+      local reply
+      read -r -p "Let the toggles island show it? This adds $DELL_FNLOCK_CONF with sudo [y/N] " reply
+      if [[ $reply == "y" || $reply == "Y" ]]; then
+        choice="yes"
+      else
+        FNLOCK_CHOICE="no"
+        info "Skipped: the toggles island will not show the Fn lock here (set it up with --fn-lock)"
+        return 0
+      fi
+    fi
+  fi
+  FNLOCK_CHOICE="yes"
+
+  if (( DRY_RUN )); then
+    printf '  would install %s and apply it to the loaded modules\n' "$DELL_FNLOCK_CONF"
+    return 0
+  fi
+  if [[ ! -t 0 ]]; then
+    warn "No terminal to ask for the sudo password; Fn lock skipped. Re-run install.sh in a terminal to set it up"
+    return 0
+  fi
+  sudo -v || { warn "sudo authentication failed; Fn lock skipped"; return 0; }
+  sudo install -Dm644 "$src" "$DELL_FNLOCK_CONF" || { warn "could not write $DELL_FNLOCK_CONF"; return 0; }
+
+  # The file takes effect when the modules next load. Do now what it does,
+  # so the island shows the lock without a reboot.
+  sudo chmod 0444 "$value" || warn "could not make $value readable"
+  if [[ -e /proc/dynamic_debug/control ]]; then
+    printf 'module dell_wmi +p\n' | sudo tee /proc/dynamic_debug/control >/dev/null ||
+      warn "could not turn on dell_wmi's debug messages"
+  fi
+  ok "Installed $DELL_FNLOCK_CONF"
+}
+
+# remove_dell_fnlock VALUE_FILE: takes the file back out, for --no-fn-lock,
+# and undoes what it did to the loaded modules.
+remove_dell_fnlock() {
+  local value="$1"
+  if (( DRY_RUN )); then
+    printf '  would remove (sudo): %s\n' "$DELL_FNLOCK_CONF"
+    return 0
+  fi
+  if [[ ! -t 0 ]] || ! sudo -v; then
+    warn "$DELL_FNLOCK_CONF is left; remove it with: sudo rm $DELL_FNLOCK_CONF"
+    return 0
+  fi
+  sudo rm -f "$DELL_FNLOCK_CONF" || { warn "could not remove $DELL_FNLOCK_CONF"; return 0; }
+  sudo chmod 0600 "$value" || true
+  if [[ -e /proc/dynamic_debug/control ]]; then
+    printf 'module dell_wmi -p\n' | sudo tee /proc/dynamic_debug/control >/dev/null || true
+  fi
+  ok "Removed $DELL_FNLOCK_CONF"
+}
+
 install_cli() {
   local src dest mode
   src="$(manifest_get '.cli.src')"
@@ -959,6 +1069,7 @@ write_state() {
     --arg hypr_require "$(expand_path "$(manifest_get '.hypr.require.file')")" \
     --arg omarchy_config "$OMARCHY_CONFIG" \
     --arg font "$FONT_CHOICE" \
+    --arg dell_fn_lock "$FNLOCK_CHOICE" \
     '{
        name: $name,
        version: $version,
@@ -971,7 +1082,8 @@ write_state() {
        hypr_module: $hypr_module,
        hypr_require: $hypr_require,
        omarchy_config: $omarchy_config,
-       font: $font
+       font: $font,
+       dell_fn_lock: $dell_fn_lock
      }' >"$STATE_DIR/state.json"
 
   ok "Wrote state to $STATE_DIR/state.json"
@@ -1190,6 +1302,14 @@ main() {
         FONT_CHOICE="no"
         shift
         ;;
+      --fn-lock)
+        FNLOCK_CHOICE="yes"
+        shift
+        ;;
+      --no-fn-lock)
+        FNLOCK_CHOICE="no"
+        shift
+        ;;
       -h | --help)
         usage
         exit 0
@@ -1238,6 +1358,7 @@ main() {
   deconflict_hypr
   enable_app_blur
   configure_omarchy
+  install_dell_fnlock
   install_cli
   check_path_order
   write_state

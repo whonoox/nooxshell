@@ -390,6 +390,36 @@ report_omarchy_config() {
   ok "shell.json restored from the pristine backup"
 }
 
+# The installer's one system file, added on Dell laptops so the toggles
+# island can show the Fn lock. Removing it needs sudo; without a terminal to
+# ask on, say how instead.
+remove_dell_fnlock() {
+  local conf="/etc/modprobe.d/nooxshell-dell-fnlock.conf"
+  [[ -e $conf ]] || return 0
+
+  if (( DRY_RUN )); then
+    printf '  would remove (sudo): %s\n' "$conf"
+    return 0
+  fi
+  if [[ ! -t 0 ]] || ! sudo -v; then
+    warn "$conf is left; remove it with: sudo rm $conf"
+    return 0
+  fi
+  sudo rm -f "$conf" || { warn "could not remove $conf"; return 0; }
+
+  # Undo what it did to the loaded modules too.
+  local value
+  for value in /sys/class/firmware-attributes/*/attributes/FnLockMode/current_value; do
+    if [[ -e $value ]]; then
+      sudo chmod 0600 "$value" || true
+    fi
+  done
+  if [[ -e /proc/dynamic_debug/control ]]; then
+    printf 'module dell_wmi -p\n' | sudo tee /proc/dynamic_debug/control >/dev/null || true
+  fi
+  ok "Removed $conf"
+}
+
 revive_stock_shell() {
   info "Restarting the stock Omarchy shell"
   run hyprctl reload || warn "hyprctl reload failed"
@@ -450,6 +480,7 @@ main() {
   remove_hypr_module
   remove_app_blur
   report_omarchy_config
+  remove_dell_fnlock
 
   if (( ! DRY_RUN )); then
     rm -rf "$STATE_DIR"
