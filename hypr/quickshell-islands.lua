@@ -58,6 +58,8 @@ M.bindings = {
   { key = "SUPER + ALT + I", desc = "Stay awake toggle", dispatch = "quickshell:stayAwakeToggle" },
   { key = "SUPER + ALT + L", desc = "Night light toggle", dispatch = "quickshell:nightLightToggle" },
   { key = "SUPER + ALT + K", desc = "Key sounds toggle", dispatch = "quickshell:keySoundsToggle" },
+  -- xkbcommon names the key "period"; the upper-case "PERIOD" may not match.
+  { key = "SUPER + ALT + period", desc = "Switch input language", dispatch = "quickshell:inputCycle" },
   { key = "XF86RFKill", desc = "Airplane mode toggle", dispatch = "quickshell:airplaneToggle" },
 }
 

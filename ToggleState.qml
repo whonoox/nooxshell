@@ -407,6 +407,65 @@ QtObject {
     }
 
     // ------------------------------------------------------------------
+    // Input Language (Fcitx) State
+    // ------------------------------------------------------------------
+    // Read and switched through Omarchy's own Fcitx reader, the one its bar
+    // runs for Super+I: it prints the current method as a line of JSON
+    // whenever it changes and steps to the next one on "cycle". Fcitx keeps
+    // one method per window, so the reading follows the focused window. A
+    // switch made before any text field has focus is kept until one does.
+    // Without Fcitx it cycles the keyboard layouts instead.
+    readonly property string inputReaderPath: (Quickshell.env("OMARCHY_PATH") || "/usr/share/omarchy")
+        + "/default/input-methods/indicator.py"
+    property var inputMethods: []
+    property string inputMethod: ""
+    property string inputName: ""
+    property string inputLabel: ""
+    property string inputLanguage: ""
+    readonly property bool inputAvailable: inputMethods.length > 1
+
+    // Two or three letters for the island: Fcitx's label when it has one,
+    // else the method's language ("en", "am").
+    readonly property string inputShortLabel: {
+        var text = root.inputLabel || root.inputLanguage || root.inputName.replace(/^Keyboard - /, "")
+        return String(text).split(/[_\s(]/)[0].substring(0, 3)
+    }
+
+    function cycleInput(back) {
+        if (!inputReader.running) return false
+        inputReader.write(back ? "cycle back\n" : "cycle\n")
+        return true
+    }
+
+    property Process inputReader: Process {
+        command: ["/usr/bin/python3", root.inputReaderPath]
+        running: true
+        stdinEnabled: true
+        stdout: SplitParser {
+            onRead: function(line) {
+                var state
+                try { state = JSON.parse(line) } catch (e) { return }
+                root.inputMethods = state.methods || []
+                root.inputName = state.name || ""
+                root.inputLabel = state.label || ""
+                root.inputLanguage = state.language || ""
+                // Last, so a change is seen with the rest already in place.
+                root.inputMethod = state.current || ""
+            }
+        }
+        onExited: {
+            root.inputMethods = []
+            root.inputMethod = ""
+            inputReaderRestartTimer.restart()
+        }
+    }
+
+    property Timer inputReaderRestartTimer: Timer {
+        interval: 5000
+        onTriggered: root.inputReader.running = true
+    }
+
+    // ------------------------------------------------------------------
     // Airplane Mode State
     // ------------------------------------------------------------------
     property bool airplaneMode: false

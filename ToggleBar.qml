@@ -83,6 +83,20 @@ Scope {
         root.reveal("keys")
     }
 
+    // Super+Alt+. switches to the next input language (English, Sera, ...).
+    function cycleInput() {
+        if (!ToggleState.cycleInput(false)) return "not running"
+        root.reveal("input")
+        return "ok"
+    }
+
+    // Fcitx keeps a language per window, so the reading also changes as
+    // focus moves between windows typing in different ones. Only a change
+    // within one window is a switch (a trigger key pressed in it, or a
+    // click on the island) and pops the island up.
+    property var _inputWindow: null
+    property string _inputPrevious: ""
+
     Connections {
         target: ToggleState
         function onMicMutedChanged() {
@@ -128,6 +142,16 @@ Scope {
         function onKeySoundsChanged() {
             if (root._initialized) {
                 root.reveal("keys")
+            }
+        }
+        function onInputMethodChanged() {
+            var window = Hyprland.activeToplevel
+            var switched = root._inputPrevious !== "" && ToggleState.inputMethod !== ""
+                && window === root._inputWindow
+            root._inputWindow = window
+            root._inputPrevious = ToggleState.inputMethod
+            if (root._initialized && switched && ToggleState.inputAvailable) {
+                root.reveal("input")
             }
         }
     }
@@ -197,6 +221,13 @@ Scope {
         onPressed: root.toggleKeySounds()
     }
 
+    GlobalShortcut {
+        name: "inputCycle"
+        description: "Switch to the next input language"
+        appid: "quickshell"
+        onPressed: root.cycleInput()
+    }
+
     // ------------------------------------------------------------------
     // IPC Handler
     // ------------------------------------------------------------------
@@ -255,6 +286,19 @@ Scope {
         function toggleKeySounds(): string {
             root.toggleKeySounds()
             return ToggleState.keySounds ? "keys_on" : "keys_off"
+        }
+
+        function cycleInput(): string {
+            return root.cycleInput()
+        }
+
+        function revealInput(): string {
+            root.reveal("input")
+            return "ok"
+        }
+
+        function inputStatus(): string {
+            return ToggleState.inputMethod
         }
 
         function revealMic(): string {
@@ -342,6 +386,8 @@ Scope {
                 airplaneMode: ToggleState.airplaneMode,
                 nightLight: ToggleState.nightLight,
                 keySounds: ToggleState.keySounds,
+                inputMethod: ToggleState.inputMethod,
+                inputMethods: ToggleState.inputMethods,
                 visible: !root.hideBar,
                 lastTriggered: root.lastTriggered
             })
@@ -749,7 +795,46 @@ Scope {
                             }
                         }
 
-                        // 7. Airplane Mode Toggle (No button background, no border)
+                        // 7. Input language: the language being typed, as two or
+                        // three letters, always lit: it is a reading, not an on
+                        // and off. A click switches to the next one. Shown
+                        // only with more than one language set up in Fcitx.
+                        Item {
+                            id: inputButton
+                            width: Math.max(24, inputText.implicitWidth + 6)
+                            height: 24
+                            visible: ToggleState.inputAvailable
+
+                            readonly property bool isTriggered: root.lastTriggered === "input"
+                            readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
+                            readonly property bool isHovered: inputMouse.containsMouse
+
+                            scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
+                            opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
+
+                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                            Text {
+                                id: inputText
+                                anchors.centerIn: parent
+                                text: ToggleState.inputShortLabel
+                                font.family: Theme.displayFont
+                                font.pixelSize: 13
+                                font.bold: true
+                                color: Theme.brand
+                            }
+
+                            MouseArea {
+                                id: inputMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.cycleInput()
+                            }
+                        }
+
+                        // 8. Airplane Mode Toggle (No button background, no border)
                         Item {
                             id: airplaneButton
                             width: 24
@@ -797,7 +882,7 @@ Scope {
                             }
                         }
 
-                        // 8. Night Light Toggle (No button background, no border)
+                        // 9. Night Light Toggle (No button background, no border)
                         Item {
                             id: nightLightButton
                             width: 24
@@ -845,7 +930,7 @@ Scope {
                             }
                         }
 
-                        // 9. Key Sounds Toggle (No button background, no border)
+                        // 10. Key Sounds Toggle (No button background, no border)
                         Item {
                             id: keysButton
                             width: 24

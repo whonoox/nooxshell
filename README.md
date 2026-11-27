@@ -119,6 +119,7 @@ line, restores `shell.json`, and brings the stock Omarchy shell back up.
 | Volume / Brightness keys | Island HUDs |
 | `Super+Shift+Arrows` | Swap the active window, or move the picked tile group |
 | `Super+Alt+K` | Key sounds on or off |
+| `Super+Alt+.` | Next input language (Fcitx), shown on the toggles island |
 
 ## Tile groups
 
@@ -153,6 +154,17 @@ explains each line). The island then shows the lock but cannot set it.
 Without the file there is no Fn button on a Dell. Your answer is kept, so
 updates don't ask again; `./install.sh --fn-lock` adds the file later, and
 `./install.sh --no-fn-lock` takes it out. `./uninstall.sh` removes it too.
+
+## Input language
+
+With more than one input method set up in Fcitx (English and Amharic Sera,
+say), the toggle island shows the one being typed as its language code.
+`Super+Alt+.`, or a click on it,
+switches to the next one. Fcitx keeps a language per window; switching with
+its own keys inside a window pops the island up too, but moving focus to a
+window typing another language does not. The shell reads Fcitx through
+Omarchy's `default/input-methods/indicator.py`, the reader Omarchy's own bar
+uses for `Super+I`.
 
 ## Key sounds
 
