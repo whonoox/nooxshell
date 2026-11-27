@@ -6,8 +6,11 @@ Item {
 
     // Position preset:
     // "topLeft" | "topCenter" | "topRight" | "centerRight" |
-    // "bottomRight" | "bottomCenter" | "bottomLeft" | "centerLeft"
+    // "bottomRight" | "bottomCenter" | "bottomLeft" | "centerLeft" |
+    // "bottomLeftCorner" (an L; see ScoopContour's armRight and armTop)
     property string position: "topLeft"
+    property real armRight: 0
+    property real armTop: 0
 
     // Visual attributes
     property color color: Theme.bgc
@@ -78,6 +81,8 @@ Item {
         radius: root.radius
         cornerRadius: root.cornerRadius
         capRadius: root.capRadius
+        armRight: root.armRight
+        armTop: root.armTop
         fillColor: root.color
         borderColor: root.borderColor
         borderWidth: root.d

@@ -417,8 +417,27 @@ Scope {
             WlrLayershell.layer: Theme.islandLayer
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
+            // Only the two arms take input; the space inside the L lets
+            // clicks through to the windows behind.
             mask: Region {
-                item: cardContainer
+                item: verticalArmArea
+                Region { item: horizontalArmArea }
+            }
+
+            Item {
+                id: verticalArmArea
+                anchors.left: cardContainer.left
+                anchors.top: cardContainer.top
+                anchors.bottom: cardContainer.bottom
+                width: cardContainer.band + Theme.borderWidth
+            }
+
+            Item {
+                id: horizontalArmArea
+                anchors.left: cardContainer.left
+                anchors.right: cardContainer.right
+                anchors.bottom: cardContainer.bottom
+                height: cardContainer.band + Theme.borderWidth
             }
 
             // Bottom-Left Anchored Card Container
@@ -426,10 +445,28 @@ Scope {
                 id: cardContainer
                 anchors.left: parent.left
                 anchors.bottom: parent.bottom
-                anchors.bottomMargin: -(height + 20)
+                // The L slides in and out diagonally, out past the screen's
+                // corner: 0 is in place, 1 all the way out. Like the other
+                // islands it goes just past its own depth and 10 more; here
+                // that is an arm's thickness, since moving the island's full
+                // size would leave it off screen for most of the slide.
+                property real outward: 1
+                readonly property real travel: band + Theme.borderWidth + 10
+                anchors.leftMargin: -outward * travel
+                anchors.bottomMargin: -outward * travel
 
-                width: contentRow.implicitWidth + Theme.spacing * 4 + Theme.rounding + Theme.borderWidth
-                height: 44 + Theme.rounding + Theme.borderWidth
+                // How thick each arm is, the padding around a toggle across
+                // it, the space between toggles, and the corner slot both
+                // groups start past. edge is the flare and border beyond
+                // an arm's end.
+                readonly property real band: 44
+                readonly property real pad: (band - 24) / 2
+                readonly property real gap: Theme.spacing * 1.5
+                readonly property real cornerSlot: pad + 24 + gap
+                readonly property real edge: Theme.rounding + Theme.borderWidth
+
+                width: cornerSlot + inputGroup.implicitWidth + Theme.spacing * 2 + edge
+                height: edge + Theme.spacing * 2 + systemGroup.implicitHeight + cornerSlot
 
                 Behavior on width {
                     NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
@@ -438,7 +475,7 @@ Scope {
                 NumberAnimation {
                     id: slideAnim
                     target: cardContainer
-                    property: "anchors.bottomMargin"
+                    property: "outward"
                     duration: 250
                     easing.type: Easing.OutCubic
                     onFinished: {
@@ -454,14 +491,13 @@ Scope {
                         if (!root.hideBar) {
                             panelWindow.visible = true
                             slideAnim.stop()
-                            cardContainer.anchors.bottomMargin = -(cardContainer.height + 20)
-                            slideAnim.from = -(cardContainer.height + 20)
+                            slideAnim.from = cardContainer.outward
                             slideAnim.to = 0
                             slideAnim.start()
                         } else {
                             slideAnim.stop()
-                            slideAnim.from = cardContainer.anchors.bottomMargin
-                            slideAnim.to = -(cardContainer.height + 20)
+                            slideAnim.from = cardContainer.outward
+                            slideAnim.to = 1
                             slideAnim.start()
                         }
                     }
@@ -470,7 +506,7 @@ Scope {
                 Component.onCompleted: {
                     if (!root.hideBar) {
                         panelWindow.visible = true
-                        cardContainer.anchors.bottomMargin = 0
+                        cardContainer.outward = 0
                     }
                 }
 
@@ -484,498 +520,504 @@ Scope {
                     }
                 }
 
-                // Unified single-vector background contour (position: bottomLeft)
+                // An L in the corner: the system toggles stand up the left
+                // screen edge, the input ones run along the bottom, and the
+                // two arms meet in the corner. Both arms are band thick and
+                // laid out on one grid of slots, so the empty corner slot
+                // keeps the column and the row in step.
                 ScoopV2 {
                     id: backgroundShape
                     anchors.fill: parent
-                    position: "bottomLeft"
+                    position: "bottomLeftCorner"
+                    armRight: cardContainer.band
+                    armTop: cardContainer.height - cardContainer.band
                     color: Theme.bgc
                     radius: Theme.rounding
                     cornerRadius: Theme.rounding
                     borderWidth: Theme.borderWidth
                 }
 
-                // Inner Content Area
-                Item {
-                    id: background
-                    anchors.bottom: parent.bottom
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.rightMargin: Theme.rounding + Theme.borderWidth
-                    anchors.top: parent.top
-                    anchors.topMargin: Theme.rounding + Theme.borderWidth
+                // System: notifications, mic, idle, radios, screen.
+                Column {
+                    id: systemGroup
+                    x: cardContainer.pad
+                    y: cardContainer.edge + Theme.spacing * 2
+                    spacing: cardContainer.gap
 
-                    Row {
-                        id: contentRow
-                        anchors.left: parent.left
-                        anchors.leftMargin: Theme.spacing * 2
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: Theme.spacing * 1.5
 
-                        // 1. Notification DND Toggle (No button background, no border)
-                        Item {
-                            id: notifButton
-                            width: 24
-                            height: 24
+                    // 1. Notification DND Toggle (No button background, no border)
+                    Item {
+                        id: notifButton
+                        width: 24
+                        height: 24
 
-                            readonly property bool isDnd: ToggleState.dnd
-                            readonly property bool isTriggered: root.lastTriggered === "notif"
-                            readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
-                            readonly property bool isHovered: notifMouse.containsMouse
+                        readonly property bool isDnd: ToggleState.dnd
+                        readonly property bool isTriggered: root.lastTriggered === "notif"
+                        readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
+                        readonly property bool isHovered: notifMouse.containsMouse
 
-                            scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
-                            opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
+                        scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
+                        opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
 
-                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
-                            Image {
-                                id: notifRawIcon
-                                anchors.centerIn: parent
-                                width: 16
-                                height: 16
-                                sourceSize.width: 32
-                                sourceSize.height: 32
-                                source: notifButton.isDnd ? "decorations/bell-slash.svg" : "decorations/bell.svg"
-                                fillMode: Image.PreserveAspectFit
-                                visible: false
-                            }
-
-                            MultiEffect {
-                                anchors.fill: notifRawIcon
-                                source: notifRawIcon
-                                colorization: 1.0
-                                colorizationColor: !notifButton.isDnd
-                                    ? Theme.brand
-                                    : (notifButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
-                                Behavior on colorizationColor { ColorAnimation { duration: 150 } }
-                            }
-
-                            MouseArea {
-                                id: notifMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.toggleNotif()
-                            }
+                        Image {
+                            id: notifRawIcon
+                            anchors.centerIn: parent
+                            width: 16
+                            height: 16
+                            sourceSize.width: 32
+                            sourceSize.height: 32
+                            source: notifButton.isDnd ? "decorations/bell-slash.svg" : "decorations/bell.svg"
+                            fillMode: Image.PreserveAspectFit
+                            visible: false
                         }
 
-                        // 2. Microphone Mute Toggle (No button background, no border)
-                        Item {
-                            id: micButton
-                            width: 24
-                            height: 24
-
-                            readonly property bool isMuted: ToggleState.micMuted
-                            readonly property bool isTriggered: root.lastTriggered === "mic"
-                            readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
-                            readonly property bool isHovered: micMouse.containsMouse
-
-                            scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
-                            opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
-
-                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-
-                            Image {
-                                id: micRawIcon
-                                anchors.centerIn: parent
-                                width: 16
-                                height: 16
-                                sourceSize.width: 32
-                                sourceSize.height: 32
-                                source: micButton.isMuted ? "decorations/microphone-slash.svg" : "decorations/microphone.svg"
-                                fillMode: Image.PreserveAspectFit
-                                visible: false
-                            }
-
-                            MultiEffect {
-                                anchors.fill: micRawIcon
-                                source: micRawIcon
-                                colorization: 1.0
-                                colorizationColor: !micButton.isMuted
-                                    ? Theme.brand
-                                    : (micButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
-                                Behavior on colorizationColor { ColorAnimation { duration: 150 } }
-                            }
-
-                            MouseArea {
-                                id: micMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.toggleMic()
-                            }
+                        MultiEffect {
+                            anchors.fill: notifRawIcon
+                            source: notifRawIcon
+                            colorization: 1.0
+                            colorizationColor: !notifButton.isDnd
+                                ? Theme.brand
+                                : (notifButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
+                            Behavior on colorizationColor { ColorAnimation { duration: 150 } }
                         }
 
-                        // 3. Cursor X-Ray Toggle (No button background, no border)
-                        Item {
-                            id: cursorButton
-                            width: 24
-                            height: 24
+                        MouseArea {
+                            id: notifMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.toggleNotif()
+                        }
+                    }
 
-                            readonly property bool isXRay: ToggleState.cursorXRay
-                            readonly property bool isTriggered: root.lastTriggered === "cursor"
-                            readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
-                            readonly property bool isHovered: cursorMouse.containsMouse
+                    // 2. Microphone Mute Toggle (No button background, no border)
+                    Item {
+                        id: micButton
+                        width: 24
+                        height: 24
 
-                            scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
-                            opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
+                        readonly property bool isMuted: ToggleState.micMuted
+                        readonly property bool isTriggered: root.lastTriggered === "mic"
+                        readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
+                        readonly property bool isHovered: micMouse.containsMouse
 
-                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
+                        opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
 
-                            Image {
-                                id: cursorRawIcon
-                                anchors.centerIn: parent
-                                width: 16
-                                height: 16
-                                sourceSize.width: 32
-                                sourceSize.height: 32
-                                source: "decorations/cursor.svg"
-                                fillMode: Image.PreserveAspectFit
-                                visible: false
-                            }
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
-                            MultiEffect {
-                                anchors.fill: cursorRawIcon
-                                source: cursorRawIcon
-                                colorization: 1.0
-                                colorizationColor: cursorButton.isXRay
-                                    ? Theme.brand
-                                    : (cursorButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
-                                Behavior on colorizationColor { ColorAnimation { duration: 150 } }
-                            }
-
-                            MouseArea {
-                                id: cursorMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.toggleCursor()
-                            }
+                        Image {
+                            id: micRawIcon
+                            anchors.centerIn: parent
+                            width: 16
+                            height: 16
+                            sourceSize.width: 32
+                            sourceSize.height: 32
+                            source: micButton.isMuted ? "decorations/microphone-slash.svg" : "decorations/microphone.svg"
+                            fillMode: Image.PreserveAspectFit
+                            visible: false
                         }
 
-                        // 4. Stay Awake (Idle Inhibition) Toggle (No button background, no border)
-                        Item {
-                            id: awakeButton
-                            width: 24
-                            height: 24
-
-                            readonly property bool isAwake: ToggleState.stayAwake
-                            readonly property bool isTriggered: root.lastTriggered === "awake"
-                            readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
-                            readonly property bool isHovered: awakeMouse.containsMouse
-
-                            scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
-                            opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
-
-                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-
-                            Image {
-                                id: awakeRawIcon
-                                anchors.centerIn: parent
-                                width: 16
-                                height: 16
-                                sourceSize.width: 32
-                                sourceSize.height: 32
-                                source: "decorations/coffee.svg"
-                                fillMode: Image.PreserveAspectFit
-                                visible: false
-                            }
-
-                            MultiEffect {
-                                anchors.fill: awakeRawIcon
-                                source: awakeRawIcon
-                                colorization: 1.0
-                                colorizationColor: awakeButton.isAwake
-                                    ? Theme.brand
-                                    : (awakeButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
-                                Behavior on colorizationColor { ColorAnimation { duration: 150 } }
-                            }
-
-                            MouseArea {
-                                id: awakeMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.toggleAwake()
-                            }
+                        MultiEffect {
+                            anchors.fill: micRawIcon
+                            source: micRawIcon
+                            colorization: 1.0
+                            colorizationColor: !micButton.isMuted
+                                ? Theme.brand
+                                : (micButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
+                            Behavior on colorizationColor { ColorAnimation { duration: 150 } }
                         }
 
-                        // 5. Fn Lock Toggle (No button background, no border)
-                        Item {
-                            id: fnLockButton
-                            width: 24
-                            height: 24
-                            visible: ToggleState.fnLockAvailable
+                        MouseArea {
+                            id: micMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.toggleMic()
+                        }
+                    }
 
-                            readonly property bool isFnLock: ToggleState.fnLock
-                            readonly property bool isTriggered: root.lastTriggered === "fnlock"
-                            readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
-                            readonly property bool isHovered: fnLockMouse.containsMouse
+                    // 3. Stay Awake (Idle Inhibition) Toggle (No button background, no border)
+                    Item {
+                        id: awakeButton
+                        width: 24
+                        height: 24
 
-                            scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
-                            opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
+                        readonly property bool isAwake: ToggleState.stayAwake
+                        readonly property bool isTriggered: root.lastTriggered === "awake"
+                        readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
+                        readonly property bool isHovered: awakeMouse.containsMouse
 
-                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
+                        opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
 
-                            Image {
-                                id: fnLockRawIcon
-                                anchors.centerIn: parent
-                                width: 16
-                                height: 16
-                                sourceSize.width: 32
-                                sourceSize.height: 32
-                                source: "decorations/function.svg"
-                                fillMode: Image.PreserveAspectFit
-                                visible: false
-                            }
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
-                            MultiEffect {
-                                anchors.fill: fnLockRawIcon
-                                source: fnLockRawIcon
-                                colorization: 1.0
-                                colorizationColor: fnLockButton.isFnLock
-                                    ? Theme.brand
-                                    : (fnLockButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
-                                Behavior on colorizationColor { ColorAnimation { duration: 150 } }
-                            }
-
-                            MouseArea {
-                                id: fnLockMouse
-                                anchors.fill: parent
-                                // A Dell's Fn lock can only be shown; Fn+Esc sets it.
-                                enabled: ToggleState.fnLockSettable
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.toggleFnLock()
-                            }
+                        Image {
+                            id: awakeRawIcon
+                            anchors.centerIn: parent
+                            width: 16
+                            height: 16
+                            sourceSize.width: 32
+                            sourceSize.height: 32
+                            source: "decorations/coffee.svg"
+                            fillMode: Image.PreserveAspectFit
+                            visible: false
                         }
 
-                        // 6. Caps Lock indicator. It only shows the lock, which
-                        // the shell cannot set (see ToggleState), and pops the
-                        // island up when it changes, for keys without a light.
-                        Item {
-                            id: capsLockButton
-                            width: 24
-                            height: 24
-                            visible: ToggleState.capsLockAvailable
-
-                            readonly property bool isCapsLock: ToggleState.capsLock
-                            readonly property bool isTriggered: root.lastTriggered === "capslock"
-                            readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
-
-                            scale: isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9)
-                            opacity: isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85)
-
-                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-
-                            Image {
-                                id: capsLockRawIcon
-                                anchors.centerIn: parent
-                                width: 16
-                                height: 16
-                                sourceSize.width: 32
-                                sourceSize.height: 32
-                                source: "decorations/capslock.svg"
-                                fillMode: Image.PreserveAspectFit
-                                visible: false
-                            }
-
-                            MultiEffect {
-                                anchors.fill: capsLockRawIcon
-                                source: capsLockRawIcon
-                                colorization: 1.0
-                                colorizationColor: capsLockButton.isCapsLock ? Theme.brand : Theme.darkForeground
-                                Behavior on colorizationColor { ColorAnimation { duration: 150 } }
-                            }
+                        MultiEffect {
+                            anchors.fill: awakeRawIcon
+                            source: awakeRawIcon
+                            colorization: 1.0
+                            colorizationColor: awakeButton.isAwake
+                                ? Theme.brand
+                                : (awakeButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
+                            Behavior on colorizationColor { ColorAnimation { duration: 150 } }
                         }
 
-                        // 7. Input language: the language being typed, as two or
-                        // three letters, always lit: it is a reading, not an on
-                        // and off. A click switches to the next one. Shown
-                        // only with more than one language set up in Fcitx.
-                        Item {
-                            id: inputButton
-                            width: Math.max(24, inputText.implicitWidth + 6)
-                            height: 24
-                            visible: ToggleState.inputAvailable
+                        MouseArea {
+                            id: awakeMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.toggleAwake()
+                        }
+                    }
 
-                            readonly property bool isTriggered: root.lastTriggered === "input"
-                            readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
-                            readonly property bool isHovered: inputMouse.containsMouse
+                    // 4. Airplane Mode Toggle (No button background, no border)
+                    Item {
+                        id: airplaneButton
+                        width: 24
+                        height: 24
 
-                            scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
-                            opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
+                        readonly property bool isAirplane: ToggleState.airplaneMode
+                        readonly property bool isTriggered: root.lastTriggered === "airplane"
+                        readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
+                        readonly property bool isHovered: airplaneMouse.containsMouse
 
-                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
+                        opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
 
-                            Text {
-                                id: inputText
-                                anchors.centerIn: parent
-                                text: ToggleState.inputShortLabel
-                                font.family: Theme.displayFont
-                                font.pixelSize: 13
-                                font.bold: true
-                                color: Theme.brand
-                            }
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
-                            MouseArea {
-                                id: inputMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.cycleInput()
-                            }
+                        Image {
+                            id: airplaneRawIcon
+                            anchors.centerIn: parent
+                            width: 16
+                            height: 16
+                            sourceSize.width: 32
+                            sourceSize.height: 32
+                            source: "decorations/airplane.svg"
+                            fillMode: Image.PreserveAspectFit
+                            visible: false
                         }
 
-                        // 8. Airplane Mode Toggle (No button background, no border)
-                        Item {
-                            id: airplaneButton
-                            width: 24
-                            height: 24
-
-                            readonly property bool isAirplane: ToggleState.airplaneMode
-                            readonly property bool isTriggered: root.lastTriggered === "airplane"
-                            readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
-                            readonly property bool isHovered: airplaneMouse.containsMouse
-
-                            scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
-                            opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
-
-                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-
-                            Image {
-                                id: airplaneRawIcon
-                                anchors.centerIn: parent
-                                width: 16
-                                height: 16
-                                sourceSize.width: 32
-                                sourceSize.height: 32
-                                source: "decorations/airplane.svg"
-                                fillMode: Image.PreserveAspectFit
-                                visible: false
-                            }
-
-                            MultiEffect {
-                                anchors.fill: airplaneRawIcon
-                                source: airplaneRawIcon
-                                colorization: 1.0
-                                colorizationColor: airplaneButton.isAirplane
-                                    ? Theme.brand
-                                    : (airplaneButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
-                                Behavior on colorizationColor { ColorAnimation { duration: 150 } }
-                            }
-
-                            MouseArea {
-                                id: airplaneMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.toggleAirplane()
-                            }
+                        MultiEffect {
+                            anchors.fill: airplaneRawIcon
+                            source: airplaneRawIcon
+                            colorization: 1.0
+                            colorizationColor: airplaneButton.isAirplane
+                                ? Theme.brand
+                                : (airplaneButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
+                            Behavior on colorizationColor { ColorAnimation { duration: 150 } }
                         }
 
-                        // 9. Night Light Toggle (No button background, no border)
-                        Item {
-                            id: nightLightButton
-                            width: 24
-                            height: 24
+                        MouseArea {
+                            id: airplaneMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.toggleAirplane()
+                        }
+                    }
 
-                            readonly property bool isNightLight: ToggleState.nightLight
-                            readonly property bool isTriggered: root.lastTriggered === "nightlight"
-                            readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
-                            readonly property bool isHovered: nightLightMouse.containsMouse
+                    // 5. Night Light Toggle (No button background, no border)
+                    Item {
+                        id: nightLightButton
+                        width: 24
+                        height: 24
 
-                            scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
-                            opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
+                        readonly property bool isNightLight: ToggleState.nightLight
+                        readonly property bool isTriggered: root.lastTriggered === "nightlight"
+                        readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
+                        readonly property bool isHovered: nightLightMouse.containsMouse
 
-                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
+                        opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
 
-                            Image {
-                                id: nightLightRawIcon
-                                anchors.centerIn: parent
-                                width: 16
-                                height: 16
-                                sourceSize.width: 32
-                                sourceSize.height: 32
-                                source: "decorations/moon.svg"
-                                fillMode: Image.PreserveAspectFit
-                                visible: false
-                            }
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
-                            MultiEffect {
-                                anchors.fill: nightLightRawIcon
-                                source: nightLightRawIcon
-                                colorization: 1.0
-                                colorizationColor: nightLightButton.isNightLight
-                                    ? Theme.brand
-                                    : (nightLightButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
-                                Behavior on colorizationColor { ColorAnimation { duration: 150 } }
-                            }
-
-                            MouseArea {
-                                id: nightLightMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.toggleNightLight()
-                            }
+                        Image {
+                            id: nightLightRawIcon
+                            anchors.centerIn: parent
+                            width: 16
+                            height: 16
+                            sourceSize.width: 32
+                            sourceSize.height: 32
+                            source: "decorations/moon.svg"
+                            fillMode: Image.PreserveAspectFit
+                            visible: false
                         }
 
-                        // 10. Key Sounds Toggle (No button background, no border)
-                        Item {
-                            id: keysButton
-                            width: 24
-                            height: 24
+                        MultiEffect {
+                            anchors.fill: nightLightRawIcon
+                            source: nightLightRawIcon
+                            colorization: 1.0
+                            colorizationColor: nightLightButton.isNightLight
+                                ? Theme.brand
+                                : (nightLightButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
+                            Behavior on colorizationColor { ColorAnimation { duration: 150 } }
+                        }
 
-                            readonly property bool isKeys: ToggleState.keySounds
-                            readonly property bool isTriggered: root.lastTriggered === "keys"
-                            readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
-                            readonly property bool isHovered: keysMouse.containsMouse
+                        MouseArea {
+                            id: nightLightMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.toggleNightLight()
+                        }
+                    }
+                }
 
-                            scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
-                            opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
+                // Input: Fn lock, Caps Lock, input language, and the two
+                // touches on input, cursor X-Ray and key sounds.
+                Row {
+                    id: inputGroup
+                    x: cardContainer.cornerSlot
+                    y: cardContainer.height - cardContainer.band + cardContainer.pad
+                    spacing: cardContainer.gap
 
-                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
-                            Image {
-                                id: keysRawIcon
-                                anchors.centerIn: parent
-                                width: 16
-                                height: 16
-                                sourceSize.width: 32
-                                sourceSize.height: 32
-                                source: "decorations/keyboard.svg"
-                                fillMode: Image.PreserveAspectFit
-                                visible: false
-                            }
+                    // 6. Fn Lock Toggle (No button background, no border)
+                    Item {
+                        id: fnLockButton
+                        width: 24
+                        height: 24
+                        visible: ToggleState.fnLockAvailable
 
-                            MultiEffect {
-                                anchors.fill: keysRawIcon
-                                source: keysRawIcon
-                                colorization: 1.0
-                                colorizationColor: keysButton.isKeys
-                                    ? Theme.brand
-                                    : (keysButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
-                                Behavior on colorizationColor { ColorAnimation { duration: 150 } }
-                            }
+                        readonly property bool isFnLock: ToggleState.fnLock
+                        readonly property bool isTriggered: root.lastTriggered === "fnlock"
+                        readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
+                        readonly property bool isHovered: fnLockMouse.containsMouse
 
-                            MouseArea {
-                                id: keysMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.toggleKeySounds()
-                            }
+                        scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
+                        opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
+
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                        Image {
+                            id: fnLockRawIcon
+                            anchors.centerIn: parent
+                            width: 16
+                            height: 16
+                            sourceSize.width: 32
+                            sourceSize.height: 32
+                            source: "decorations/function.svg"
+                            fillMode: Image.PreserveAspectFit
+                            visible: false
+                        }
+
+                        MultiEffect {
+                            anchors.fill: fnLockRawIcon
+                            source: fnLockRawIcon
+                            colorization: 1.0
+                            colorizationColor: fnLockButton.isFnLock
+                                ? Theme.brand
+                                : (fnLockButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
+                            Behavior on colorizationColor { ColorAnimation { duration: 150 } }
+                        }
+
+                        MouseArea {
+                            id: fnLockMouse
+                            anchors.fill: parent
+                            // A Dell's Fn lock can only be shown; Fn+Esc sets it.
+                            enabled: ToggleState.fnLockSettable
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.toggleFnLock()
+                        }
+                    }
+
+                    // 7. Caps Lock indicator. It only shows the lock, which
+                    // the shell cannot set (see ToggleState), and pops the
+                    // island up when it changes, for keys without a light.
+                    Item {
+                        id: capsLockButton
+                        width: 24
+                        height: 24
+                        visible: ToggleState.capsLockAvailable
+
+                        readonly property bool isCapsLock: ToggleState.capsLock
+                        readonly property bool isTriggered: root.lastTriggered === "capslock"
+                        readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
+
+                        scale: isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9)
+                        opacity: isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85)
+
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                        Image {
+                            id: capsLockRawIcon
+                            anchors.centerIn: parent
+                            width: 16
+                            height: 16
+                            sourceSize.width: 32
+                            sourceSize.height: 32
+                            source: "decorations/capslock.svg"
+                            fillMode: Image.PreserveAspectFit
+                            visible: false
+                        }
+
+                        MultiEffect {
+                            anchors.fill: capsLockRawIcon
+                            source: capsLockRawIcon
+                            colorization: 1.0
+                            colorizationColor: capsLockButton.isCapsLock ? Theme.brand : Theme.darkForeground
+                            Behavior on colorizationColor { ColorAnimation { duration: 150 } }
+                        }
+                    }
+
+                    // 8. Input language: the language being typed, as two or
+                    // three letters, always lit: it is a reading, not an on
+                    // and off. A click switches to the next one. Shown
+                    // only with more than one language set up in Fcitx.
+                    Item {
+                        id: inputButton
+                        width: Math.max(24, inputText.implicitWidth + 6)
+                        height: 24
+                        visible: ToggleState.inputAvailable
+
+                        readonly property bool isTriggered: root.lastTriggered === "input"
+                        readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
+                        readonly property bool isHovered: inputMouse.containsMouse
+
+                        scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
+                        opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
+
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                        Text {
+                            id: inputText
+                            anchors.centerIn: parent
+                            text: ToggleState.inputShortLabel
+                            font.family: Theme.displayFont
+                            font.pixelSize: 13
+                            font.bold: true
+                            color: Theme.brand
+                        }
+
+                        MouseArea {
+                            id: inputMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.cycleInput()
+                        }
+                    }
+
+                    // 9. Cursor X-Ray Toggle (No button background, no border)
+                    Item {
+                        id: cursorButton
+                        width: 24
+                        height: 24
+
+                        readonly property bool isXRay: ToggleState.cursorXRay
+                        readonly property bool isTriggered: root.lastTriggered === "cursor"
+                        readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
+                        readonly property bool isHovered: cursorMouse.containsMouse
+
+                        scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
+                        opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
+
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                        Image {
+                            id: cursorRawIcon
+                            anchors.centerIn: parent
+                            width: 16
+                            height: 16
+                            sourceSize.width: 32
+                            sourceSize.height: 32
+                            source: "decorations/cursor.svg"
+                            fillMode: Image.PreserveAspectFit
+                            visible: false
+                        }
+
+                        MultiEffect {
+                            anchors.fill: cursorRawIcon
+                            source: cursorRawIcon
+                            colorization: 1.0
+                            colorizationColor: cursorButton.isXRay
+                                ? Theme.brand
+                                : (cursorButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
+                            Behavior on colorizationColor { ColorAnimation { duration: 150 } }
+                        }
+
+                        MouseArea {
+                            id: cursorMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.toggleCursor()
+                        }
+                    }
+
+                    // 10. Key Sounds Toggle (No button background, no border)
+                    Item {
+                        id: keysButton
+                        width: 24
+                        height: 24
+
+                        readonly property bool isKeys: ToggleState.keySounds
+                        readonly property bool isTriggered: root.lastTriggered === "keys"
+                        readonly property bool isOtherTriggered: root.lastTriggered !== "none" && !isTriggered
+                        readonly property bool isHovered: keysMouse.containsMouse
+
+                        scale: isHovered ? 1.1 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.75 : 0.9))
+                        opacity: isHovered ? 1.0 : (isTriggered ? 1.0 : (isOtherTriggered ? 0.4 : 0.85))
+
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                        Image {
+                            id: keysRawIcon
+                            anchors.centerIn: parent
+                            width: 16
+                            height: 16
+                            sourceSize.width: 32
+                            sourceSize.height: 32
+                            source: "decorations/keyboard.svg"
+                            fillMode: Image.PreserveAspectFit
+                            visible: false
+                        }
+
+                        MultiEffect {
+                            anchors.fill: keysRawIcon
+                            source: keysRawIcon
+                            colorization: 1.0
+                            colorizationColor: keysButton.isKeys
+                                ? Theme.brand
+                                : (keysButton.isHovered ? Theme.brightForeground : Theme.darkForeground)
+                            Behavior on colorizationColor { ColorAnimation { duration: 150 } }
+                        }
+
+                        MouseArea {
+                            id: keysMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.toggleKeySounds()
                         }
                     }
                 }

@@ -7,8 +7,16 @@ Item {
 
     // Position preset:
     // "topLeft" | "topCenter" | "topRight" | "centerRight" |
-    // "bottomRight" | "bottomCenter" | "bottomLeft" | "centerLeft"
+    // "bottomRight" | "bottomCenter" | "bottomLeft" | "centerLeft" |
+    // "bottomLeftCorner"
     property string position: "topLeft"
+
+    // "bottomLeftCorner" only: an L in the corner, one arm up the left
+    // screen edge and one along the bottom. armRight is the x of the
+    // upright arm's right side, armTop the y of the lower arm's top. The
+    // inside corner between the two is rounded with radius.
+    property real armRight: 0
+    property real armTop: 0
 
     // Visual attributes
     property color fillColor: Theme.bgc
@@ -502,6 +510,100 @@ Item {
             PathArc {
                 x: root.effectiveWidth - root.d - root.r
                 y: root.d + root.r + root.cr
+                radiusX: root.cr
+                radiusY: root.cr
+                direction: PathArc.Clockwise
+            }
+            PathLine {
+                x: root.effectiveWidth - root.d - root.r
+                y: root.effectiveHeight - root.r
+            }
+            PathArc {
+                x: root.effectiveWidth - root.d
+                y: root.effectiveHeight
+                radiusX: root.r
+                radiusY: root.r
+                direction: PathArc.Counterclockwise
+            }
+            PathArc {
+                x: root.effectiveWidth - root.d + root.c
+                y: root.effectiveHeight + root.c
+                radiusX: root.c
+                radiusY: root.c
+                direction: PathArc.Clockwise
+            }
+            PathLine {
+                x: -root.c
+                y: root.effectiveHeight + root.c
+            }
+            PathLine {
+                x: -root.c
+                y: root.d - root.c
+            }
+        }
+    }
+
+    // 9. BOTTOM LEFT CORNER (an L: up the left edge, along the bottom)
+    Shape {
+        id: shapeBottomLeftCorner
+        visible: root.position === "bottomLeftCorner"
+        anchors.fill: parent
+        preferredRendererType: Shape.CurveRenderer
+
+        ShapePath {
+            strokeWidth: root.borderWidth * 2
+            strokeColor: root.borderWidth > 0 ? root.borderColor : "transparent"
+            fillColor: root.fillColor
+            startX: -root.c
+            startY: root.d - root.c
+
+            PathArc {
+                x: 0
+                y: root.d
+                radiusX: root.c
+                radiusY: root.c
+                direction: PathArc.Clockwise
+            }
+            // Flare into the left screen edge, then the upright arm's top.
+            PathArc {
+                x: root.r
+                y: root.d + root.r
+                radiusX: root.r
+                radiusY: root.r
+                direction: PathArc.Counterclockwise
+            }
+            PathLine {
+                x: root.armRight - root.cr
+                y: root.d + root.r
+            }
+            PathArc {
+                x: root.armRight
+                y: root.d + root.r + root.cr
+                radiusX: root.cr
+                radiusY: root.cr
+                direction: PathArc.Clockwise
+            }
+            // Down the upright arm and round the inside corner.
+            PathLine {
+                x: root.armRight
+                y: root.armTop - root.r
+            }
+            PathArc {
+                x: root.armRight + root.r
+                y: root.armTop
+                radiusX: root.r
+                radiusY: root.r
+                direction: PathArc.Counterclockwise
+            }
+            // Along the lower arm's top, then its end and the flare into
+            // the bottom screen edge.
+            PathLine {
+                x: root.effectiveWidth - root.d - root.r - root.cr
+                y: root.armTop
+            }
+            PathArc {
+                x: root.effectiveWidth - root.d - root.r
+                y: root.armTop + root.cr
                 radiusX: root.cr
                 radiusY: root.cr
                 direction: PathArc.Clockwise
